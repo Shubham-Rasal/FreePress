@@ -1,0 +1,34 @@
+{
+  "name": "FreePress",
+  "tagline": "Private, Censorship-Proof, Autonomous Publishing for Everyone",
+  "description": "FreePress is a revolutionary decentralized publishing platform that enables individuals and communities to run their own publication locally without relying on centralized servers. It combines WordPress/Ghost CMS with privacy-preserving technologies like Tor, IPFS, and Waku/libp2p to create a truly resilient, anonymous publishing system. Users can publish content that remains accessible even when their node goes offline, discover other publishers through decentralized discovery mechanisms, and protect their identity through onion routing—all without technical complexity.",
+  "team": [
+    {
+      "name": "Shubham-Rasal",
+      "email": "bluequbits@gmail.com"
+    }
+  ],
+  "demo_url": "",
+  "video_url": "",
+  "technologies": [
+    "Docker",
+    "Docker Compose",
+    "React",
+    "Vite",
+    "Next.js",
+    "Node.js",
+    "Express",
+    "WordPress",
+    "Ghost",
+    "Tor",
+    "IPFS",
+    "Waku",
+    "libp2p",
+    "SQLite",
+    "Tailwind CSS",
+    "Ed25519",
+    "TweetNaCl",
+    "shadcn/ui"
+  ]
+}
+
