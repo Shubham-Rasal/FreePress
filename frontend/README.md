@@ -1,73 +1,129 @@
-# React + TypeScript + Vite
+# FreePress Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The FreePress frontend provides two main interfaces:
 
-Currently, two official plugins are available:
+## 🌐 Main Page (/)
+**Content Discovery & Exploration**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The landing page is designed for content consumers to discover and explore publications on the FreePress network:
 
-## React Compiler
+- **Discover Publications**: Browse all published content on the network
+- **Search & Filter**: Find content by tags and sort by recency or mirror count
+- **Read Content**: Access publications via IPFS gateway or Tor onion URLs
+- **Mirror Content**: Become a mirror to help keep content available
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🎛️ Dashboard (/dashboard)
+**Publisher Control Panel**
 
-## Expanding the ESLint configuration
+The dashboard is for content publishers to manage their node and publications:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Publish Tab
+- Generate Ed25519 keypair for identity
+- Publish WordPress content to IPFS
+- Create signed manifests
+- Announce publications to the network
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Mirror Tab
+- View all content you're mirroring
+- Manage storage and pinning
+- Configure auto-mirror settings
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Status Tab
+- Monitor service health (Backend, IPFS, Tor, WordPress)
+- View system information
+- Check connectivity status
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Settings Tab
+- Manage keypairs (export/import)
+- Configure node settings
+- Backup and recovery options
+
+## Tech Stack
+
+- **React 19** with TypeScript
+- **Tailwind CSS 4** for styling
+- **React Router** for navigation
+- **Axios** for API calls
+- **Vite** for build tooling
+- **Waku** for decentralized discovery (libp2p pubsub)
+- **Protobuf** for message encoding
+
+## Development
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run development server
+pnpm dev
+
+# Build for production
+pnpm build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Styling
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The app follows the FreePress design system with:
+- Color palette: `#37322F` (primary), `#F7F5F3` (secondary background)
+- Typography: System fonts with serif for headings
+- Consistent spacing and borders matching the landing site design
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## API Integration
+
+The frontend connects to the FreePress backend at `http://localhost:4000` by default. Configure via `VITE_API_URL` environment variable.
+
+### Key Endpoints
+
+- `GET /api/status` - System status
+- `GET /api/discover` - Fetch discovered publications
+- `POST /api/publish` - Publish content to IPFS
+- `POST /api/generate-keypair` - Generate Ed25519 keys
+- `POST /api/sign-manifest` - Sign and publish manifest
+- `GET /api/manifests` - Get mirrored content
+- `POST /api/mirror` - Start mirroring content
+- `DELETE /api/mirror/:cid` - Stop mirroring
+
+## Project Structure
+
+```
+src/
+├── pages/
+│   ├── LandingPage.tsx    # Main discovery interface
+│   └── Dashboard.tsx       # Publisher dashboard
+├── components/
+│   ├── StatusTab.tsx       # System status view
+│   ├── PublishTab.tsx      # Publishing interface
+│   ├── ExploreTab.tsx      # Network exploration (deprecated - moved to LandingPage)
+│   ├── MirrorTab.tsx       # Mirror management
+│   └── SettingsTab.tsx     # Settings & configuration
+├── App.tsx                 # Router setup
+├── main.tsx               # App entry point
+└── index.css              # Global styles
+```
+
+## Features
+
+✅ **Two-Interface Architecture**
+- Consumer-focused landing page for discovery
+- Publisher-focused dashboard for management
+
+✅ **Responsive Design**
+- Mobile-first approach
+- Breakpoints: sm (640px), md (768px), lg (1024px)
+
+✅ **Real-time Updates**
+- Auto-refresh service status every 10s
+- Live connection status indicator
+
+✅ **Accessibility**
+- Semantic HTML
+- Keyboard navigation support
+- Focus states on interactive elements
+
+## Environment Variables
+
+Create a `.env` file:
+
+```env
+VITE_API_URL=http://localhost:4000
 ```
