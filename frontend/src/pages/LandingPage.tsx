@@ -4,7 +4,7 @@ import { useWakuDiscovery } from '../hooks/useWakuDiscovery';
 
 function LandingPage() {
   // Use Waku for discovery (with simulation enabled for testing)
-  const { manifests, isLoading, error, nodeStatus, simulatePublish } = useWakuDiscovery(true);
+  const { manifests, isLoading, error, nodeStatus, simulatePublish } = useWakuDiscovery(false);
   
   const [searchTag, setSearchTag] = useState('');
   const [sortBy, setSortBy] = useState<'timestamp' | 'mirrors'>('timestamp');
@@ -87,22 +87,23 @@ function LandingPage() {
                 </div>
               </div>
 
-              {/* Demo Controls */}
+              {/* Publish Controls */}
               <div className="w-full max-w-[960px] lg:w-[960px] mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div>
                     <p className="text-sm text-blue-800 font-semibold mb-1">
-                      🧪 Demo Mode: Simulate Publications
+                      {nodeStatus === 'simulation' ? '🧪 Simulation Mode' : '🌐 Waku Network'}
                     </p>
                     <p className="text-xs text-blue-700">
                       Total discovered: <strong>{manifests.length}</strong> publications
+                      {nodeStatus !== 'simulation' && ` • Status: ${nodeStatus}`}
                     </p>
                   </div>
                   <button
                     onClick={simulatePublish}
                     className="px-6 py-3 bg-blue-600 text-white rounded-full font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm"
                   >
-                    📢 Simulate Publish
+                    📢 {nodeStatus === 'simulation' ? 'Simulate' : 'Publish'}
                   </button>
                 </div>
               </div>

@@ -42,22 +42,23 @@ function ExploreTab() {
         </div>
       </div>
 
-      {/* Demo Notice */}
+      {/* Publish Controls */}
       <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <p className="text-sm text-blue-800 font-semibold mb-1">
-              🧪 Demo Mode: Simulate Publications
+              {nodeStatus === 'simulation' ? '🧪 Simulation Mode' : '🌐 Waku Network'}
             </p>
             <p className="text-xs text-blue-700">
               Total discovered: <strong>{manifests.length}</strong> publications
+              {nodeStatus !== 'simulation' && ` • Status: ${nodeStatus}`}
             </p>
           </div>
           <button
             onClick={simulatePublish}
             className="px-5 py-2 bg-blue-600 text-white rounded-full font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
           >
-            📢 Simulate Publish
+            📢 {nodeStatus === 'simulation' ? 'Simulate' : 'Publish'}
           </button>
         </div>
       </div>

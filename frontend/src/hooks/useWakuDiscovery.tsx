@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { useWaku, useLightPush, useFilterMessages, useStoreMessages } from "@waku/react";
-import { createEncoder, createDecoder } from "@waku/sdk";
+import { createLightNode, ReliableChannel, HealthStatus } from "@waku/sdk";
 import protobuf from 'protobufjs';
 
-// Define the content topic for discovery announcements
-const DISCOVERY_CONTENT_TOPIC = "/freepress/1/discovery/proto";
+// Define the content topic and channel name
+const CONTENT_TOPIC = "/freepress/1/discovery/proto";
+const CHANNEL_NAME = "freepress-discovery";
 
 // Create Protobuf message structure for manifest announcements
-const ManifestAnnouncement = new protobuf.Type("ManifestAnnouncement")
+const ManifestMessage = new protobuf.Type("ManifestMessage")
   .add(new protobuf.Field("timestamp", 1, "uint64"))
   .add(new protobuf.Field("manifest_cid", 2, "string"))
   .add(new protobuf.Field("site_cid", 3, "string"))
@@ -32,130 +32,134 @@ export interface Manifest {
   description?: string;
 }
 
+// Generate a random sender ID for this instance
+const generateSenderId = () => {
+  return `sender-${Math.random().toString(36).substring(2, 15)}`;
+};
+
 export function useWakuDiscovery(enableSimulation = false) {
   const [manifests, setManifests] = useState<Manifest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [healthStatus, setHealthStatus] = useState<string>('disconnected');
+  
   const simulationCountRef = useRef(0);
-  const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
-  const [peerCount, setPeerCount] = useState(0);
+  const reliableChannelRef = useRef<any>(null); // ReliableChannel type
+  const nodeRef = useRef<any>(null);
+  const senderIdRef = useRef(generateSenderId());
 
-  // Create and start a Light Node
-  const { node, error: nodeError, isLoading } = useWaku();
-
-  // Create encoder and decoder
-  const encoder = createEncoder({ contentTopic: DISCOVERY_CONTENT_TOPIC });
-  const decoder = createDecoder(DISCOVERY_CONTENT_TOPIC);
-
-  // Bind push method to node and encoder
-  const { push } = useLightPush({ node, encoder });
-
-  // Receive messages from Filter subscription
-  const { messages: filterMessages } = useFilterMessages({ node, decoder });
-
-  // Query Store peers for past messages
-  const { messages: storeMessages } = useStoreMessages({ node, decoder });
-
-  // Process and decode Waku messages into Manifests
+  // Initialize Waku ReliableChannel
   useEffect(() => {
-    const allMessages = storeMessages.concat(filterMessages);
-    const decodedManifests: Manifest[] = [];
-
-    allMessages.forEach((wakuMessage) => {
-      if (!wakuMessage.payload) return;
-      
-      try {
-        const decoded = ManifestAnnouncement.decode(wakuMessage.payload);
-        const manifest: Manifest = {
-          cid: decoded.manifest_cid as string,
-          site_cid: decoded.site_cid as string,
-          pubkey: decoded.pubkey as string,
-          signature: decoded.signature as string,
-          timestamp: Number(decoded.timestamp),
-          title: decoded.title as string || 'Untitled Publication',
-          description: decoded.description as string || '',
-          tags: decoded.tags ? (decoded.tags as string).split(',').filter(Boolean) : [],
-          onion_url: decoded.onion_url as string || undefined,
-          mirror_count: decoded.mirror_count as number || 0,
-        };
-        decodedManifests.push(manifest);
-      } catch (err) {
-        console.error('Failed to decode message:', err);
-      }
-    });
-
-    // Remove duplicates based on manifest CID
-    const uniqueManifests = decodedManifests.reduce((acc, manifest) => {
-      if (!acc.find(m => m.cid === manifest.cid)) {
-        acc.push(manifest);
-      }
-      return acc;
-    }, [] as Manifest[]);
-
-    setManifests(uniqueManifests);
-  }, [filterMessages, storeMessages]);
-
-  // Monitor Waku node connection and peers
-  useEffect(() => {
-    if (!node) return;
-
-    const checkPeers = async () => {
-      try {
-        const connections = await node.libp2p.peerStore.all();
-        const count = connections.length;
-        setPeerCount(count);
-        
-        if (count > 0) {
-          console.log(`🌐 Waku: Connected to ${count} peer(s)`);
-        } else {
-          console.log('⚠️ Waku: No peers connected yet, trying to discover...');
-        }
-      } catch (err) {
-        console.error('Failed to check peers:', err);
-      }
-    };
-
-    // Check immediately
-    checkPeers();
-
-    // Check every 10 seconds
-    const interval = setInterval(checkPeers, 10000);
-
-    return () => clearInterval(interval);
-  }, [node]);
-
-  // Set up BroadcastChannel for cross-tab communication
-  useEffect(() => {
-    if (!enableSimulation) return;
-
-    // Create a broadcast channel for manifest announcements
-    const channel = new BroadcastChannel('freepress-discovery');
-    broadcastChannelRef.current = channel;
-
-    // Listen for messages from other tabs/instances
-    channel.onmessage = (event) => {
-      const receivedManifest = event.data as Manifest;
-      console.log('📡 Received manifest from another tab:', receivedManifest.title);
-      
-      // Add the received manifest to our local state
-      setManifests(prev => {
-        // Check if this manifest already exists
-        const exists = prev.find(m => m.cid === receivedManifest.cid);
-        if (exists) return prev;
-        return [...prev, receivedManifest];
-      });
-    };
-
-    return () => {
-      channel.close();
-    };
-  }, [enableSimulation]);
-
-  // Function to simulate a message (for testing)
-  const simulatePublish = () => {
-    if (!enableSimulation) {
-      console.warn('Simulation is not enabled');
+    if (enableSimulation) {
+      setIsLoading(false);
       return;
     }
 
+    let channel: any = null; // ReliableChannel
+    let wakuNode: any = null;
+
+    const initWaku = async () => {
+      try {
+        console.log('🚀 Initializing Waku Light Node...');
+        
+        // Create a Light Node
+        wakuNode = await createLightNode({ 
+          defaultBootstrap: true,
+          libp2p: {
+            filterMultiaddrs: false,
+          },
+        });
+        nodeRef.current = wakuNode;
+
+        // Listen for health status
+        wakuNode.events.addEventListener('waku:health', (event: any) => {
+          const health = event.detail;
+          
+          if (health === HealthStatus.SufficientlyHealthy) {
+            setHealthStatus('healthy');
+            console.log('🌐 Waku: Connected and healthy');
+          } else if (health === HealthStatus.MinimallyHealthy) {
+            setHealthStatus('minimal');
+            console.log('⚠️ Waku: Connected but may have issues');
+          } else {
+            setHealthStatus('unhealthy');
+            console.log('❌ Waku: Disconnected or unhealthy');
+          }
+        });
+
+        // Create encoder and decoder
+        const encoder = wakuNode.createEncoder({ contentTopic: CONTENT_TOPIC });
+        const decoder = wakuNode.createDecoder({ contentTopic: CONTENT_TOPIC });
+
+        // Create reliable channel
+        console.log('📡 Creating Reliable Channel...');
+        channel = await ReliableChannel.create(
+          wakuNode,
+          CHANNEL_NAME,
+          senderIdRef.current,
+          encoder,
+          decoder
+        );
+        reliableChannelRef.current = channel;
+
+        // Listen for incoming messages
+        channel.addEventListener('message-received', (event: any) => {
+          const wakuMessage = event.detail;
+          
+          try {
+            const decoded: any = ManifestMessage.decode(wakuMessage.payload);
+            const manifest: Manifest = {
+              cid: decoded.manifest_cid || '',
+              site_cid: decoded.site_cid || '',
+              pubkey: decoded.pubkey || '',
+              signature: decoded.signature || '',
+              timestamp: Number(decoded.timestamp) || Date.now(),
+              title: decoded.title || 'Untitled Publication',
+              description: decoded.description || '',
+              tags: decoded.tags ? decoded.tags.split(',').filter(Boolean) : [],
+              onion_url: decoded.onion_url || undefined,
+              mirror_count: decoded.mirror_count || 0,
+            };
+
+            console.log('📨 Received manifest via Waku:', manifest.title);
+
+            // Add to manifests (with deduplication)
+            setManifests(prev => {
+              const exists = prev.find(m => m.cid === manifest.cid);
+              if (exists) return prev;
+              return [...prev, manifest];
+            });
+          } catch (err) {
+            console.error('Failed to decode Waku message:', err);
+          }
+        });
+
+        setIsLoading(false);
+        setError(null);
+        console.log('✅ Waku ReliableChannel ready!');
+      } catch (err: any) {
+        console.error('❌ Failed to initialize Waku:', err);
+        setError(err);
+        setIsLoading(false);
+      }
+    };
+
+    initWaku();
+
+    return () => {
+      if (channel) {
+        console.log('🔌 Closing Waku channel...');
+        // Cleanup if needed
+      }
+      if (wakuNode) {
+        wakuNode.stop?.();
+      }
+    };
+  }, [enableSimulation]);
+
+
+  // Function to simulate/publish a message
+  const simulatePublish = async () => {
     const timestamp = Date.now();
     simulationCountRef.current += 1;
     const count = simulationCountRef.current;
@@ -186,9 +190,8 @@ export function useWakuDiscovery(enableSimulation = false) {
 
     const randomIndex = (count - 1) % 5;
 
-    // Create a simulated manifest directly without using Waku push
-    // This avoids the need for Waku node to be ready for demo purposes
-    const simulatedManifest: Manifest = {
+    // Create a manifest
+    const manifest: Manifest = {
       cid: `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`,
       site_cid: `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`,
       pubkey: Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join(''),
@@ -201,31 +204,37 @@ export function useWakuDiscovery(enableSimulation = false) {
       mirror_count: Math.floor(Math.random() * 10),
     };
 
-    // Add simulated manifest directly to the list
-    setManifests(prev => {
-      // Check if this manifest already exists
-      const exists = prev.find(m => m.cid === simulatedManifest.cid);
-      if (exists) return prev;
-      return [...prev, simulatedManifest];
-    });
-
-    // Broadcast to other tabs/instances
-    if (broadcastChannelRef.current) {
-      broadcastChannelRef.current.postMessage(simulatedManifest);
-      console.log(`✓ Simulated manifest #${count} created & broadcast:`, simulatedManifest.title);
+    if (enableSimulation) {
+      // Simulation mode: Add directly to local state
+      setManifests(prev => {
+        const exists = prev.find(m => m.cid === manifest.cid);
+        if (exists) return prev;
+        return [...prev, manifest];
+      });
+      console.log(`✓ Simulated manifest #${count} created:`, manifest.title);
     } else {
-      console.log(`✓ Simulated manifest #${count} created:`, simulatedManifest.title);
+      // Real Waku mode: Publish via ReliableChannel
+      try {
+        await publishManifest(manifest);
+        console.log(`📢 Publishing manifest #${count} via Waku:`, manifest.title);
+      } catch (err) {
+        console.error('Failed to publish manifest:', err);
+      }
     }
   };
 
-  // Function to publish a manifest announcement
+  // Function to publish a manifest announcement via Waku
   const publishManifest = async (manifest: Omit<Manifest, 'timestamp'>) => {
-    if (!push) {
-      throw new Error('Waku node not ready');
+    const channel = reliableChannelRef.current;
+    
+    if (!channel) {
+      throw new Error('Waku ReliableChannel not ready');
     }
 
     const timestamp = Date.now();
-    const protoMessage = ManifestAnnouncement.create({
+    
+    // Create a new message object
+    const protoMessage = ManifestMessage.create({
       timestamp: timestamp,
       manifest_cid: manifest.cid,
       site_cid: manifest.site_cid,
@@ -238,25 +247,46 @@ export function useWakuDiscovery(enableSimulation = false) {
       mirror_count: manifest.mirror_count || 0,
     });
 
-    const payload = ManifestAnnouncement.encode(protoMessage).finish();
-    const { recipients, errors } = await push({ payload, timestamp });
+    // Serialise the message using Protobuf
+    const serialisedMessage = ManifestMessage.encode(protoMessage).finish();
 
-    if (errors.length > 0) {
-      throw new Error(`Failed to publish manifest: ${errors.join(', ')}`);
-    }
+    // Send the message, and get the id to track events
+    const messageId = channel.send(serialisedMessage);
 
-    console.log('✓ Manifest announced to', recipients.length, 'peers');
-    return { recipients, timestamp };
+    // Track when message has encountered an error
+    channel.addEventListener('sending-message-irrecoverable-error', (event: any) => {
+      if (messageId === event.detail.messageId) {
+        console.error('❌ Failed to send message:', event.detail.error);
+        // Show an error to the user
+      }
+    });
+
+    // Track when message has been sent
+    channel.addEventListener('message-sent', (event: any) => {
+      if (messageId === event.detail) {
+        // Message sent, show '✔' to the user
+        console.log('✓ Message sent via Waku');
+      }
+    });
+
+    // Track when message has been acknowledged by other participants
+    channel.addEventListener('message-acknowledged', (event: any) => {
+      if (messageId === event.detail) {
+        // Message acknowledged by other participants, show '✔✔' to the user
+        console.log('✓✓ Message acknowledged by peers');
+      }
+    });
+
+    return { messageId, timestamp };
   };
 
   return {
     manifests,
     isLoading,
-    error: nodeError,
+    error,
     publishManifest,
     simulatePublish,
-    nodeStatus: node ? (peerCount > 0 ? `connected (${peerCount} peers)` : 'no peers') : 'disconnected',
-    peerCount,
+    nodeStatus: enableSimulation ? 'simulation' : healthStatus,
   };
 }
 
