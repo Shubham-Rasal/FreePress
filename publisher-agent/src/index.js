@@ -71,6 +71,7 @@ async function exportWordPressSite() {
 
 /**
  * Upload directory to IPFS preserving structure
+ * Uses a streaming approach to handle large directories
  */
 async function uploadToIPFS(dirPath) {
   try {
@@ -83,15 +84,14 @@ async function uploadToIPFS(dirPath) {
       throw new Error(`Directory not found: ${dirPath}`);
     }
     
-    // Use IPFS HTTP API to add directory recursively
-    const ipfsUrl = `http://${IPFS_HOST}:${IPFS_PORT}/api/v0/add`;
+    // Build curl command to upload directory with multipart form data
+    // We'll upload each file individually to preserve structure
+    console.log('🔧 Preparing files for upload...');
     
-    // Build form data with all files
-    const FormData = require('form-data');
-    const formData = new FormData();
+    const files = [];
     
-    // Recursively add files
-    async function addFiles(dir, basePath = '') {
+    // Recursively collect all files with their relative paths
+    async function collectFiles(dir, basePath = '') {
       const entries = await fs.readdir(dir, { withFileTypes: true });
       
       for (const entry of entries) {
@@ -99,32 +99,33 @@ async function uploadToIPFS(dirPath) {
         const relativePath = path.join(basePath, entry.name);
         
         if (entry.isDirectory()) {
-          await addFiles(fullPath, relativePath);
+          await collectFiles(fullPath, relativePath);
         } else {
-          const fileContent = await fs.readFile(fullPath);
-          formData.append('file', fileContent, {
-            filepath: relativePath,
-            filename: relativePath
-          });
+          files.push({ fullPath, relativePath });
         }
       }
     }
     
-    await addFiles(dirPath);
+    await collectFiles(dirPath);
+    console.log(`📦 Found ${files.length} files to upload`);
     
-    // Upload to IPFS with wrap-with-directory to preserve structure
-    const response = await axios.post(
-      `${ipfsUrl}?wrap-with-directory=true&recursive=true`,
-      formData,
-      {
-        headers: formData.getHeaders(),
-        maxBodyLength: Infinity,
-        maxContentLength: Infinity
-      }
-    );
+    // Build curl command with all files
+    let curlCmd = `curl -X POST`;
+    for (const file of files) {
+      // Escape the file path for shell
+      const escapedPath = file.fullPath.replace(/'/g, "'\\''");
+      curlCmd += ` -F "file=@${escapedPath};filename=${file.relativePath}"`;
+    }
+    curlCmd += ` "http://${IPFS_HOST}:${IPFS_PORT}/api/v0/add?wrap-with-directory=true&recursive=true&progress=false"`;
+    
+    console.log('🔧 Uploading to IPFS...');
+    
+    // Execute curl command
+    const { stdout } = await execAsync(curlCmd, { maxBuffer: 50 * 1024 * 1024 });
     
     // Parse IPFS response (newline-delimited JSON)
-    const lines = response.data.trim().split('\n');
+    // The last line contains the root directory CID
+    const lines = stdout.trim().split('\n').filter(line => line);
     const lastLine = lines[lines.length - 1];
     const result = JSON.parse(lastLine);
     

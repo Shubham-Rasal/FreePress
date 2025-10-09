@@ -1,7 +1,7 @@
 FROM node:18-alpine
 
-# Install wget for WordPress mirroring
-RUN apk add --no-cache wget
+# Install wget and curl for WordPress mirroring and IPFS upload
+RUN apk add --no-cache wget curl
 
 WORKDIR /app
 
