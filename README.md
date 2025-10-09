@@ -76,6 +76,7 @@ That's it! Your FreePress node is now running.
 | **Dashboard** | 3000 | React frontend UI |
 | **Backend API** | 4000 | Express REST API |
 | **WordPress** | 8080 | CMS for content creation |
+| **Publisher Agent** | 3001 | Automatic IPFS mirroring service |
 | **IPFS Gateway** | 8081 | IPFS HTTP gateway |
 | **IPFS API** | 5001 | IPFS RPC API |
 | **MySQL** | - | WordPress database (internal) |
@@ -95,14 +96,37 @@ Visit http://localhost:3000 to see all services running:
 
 Access WordPress at http://localhost:8080 to create posts.
 
-### 3. Publish Anonymously
+### 3. Automatic IPFS Mirroring
+
+The publisher-agent automatically mirrors your WordPress site to IPFS every hour:
+- Exports complete multi-page site structure
+- Uploads to IPFS with path preservation
+- Pins content for persistence
+
+**Manual trigger:**
+```bash
+curl -X POST http://localhost:3001/api/mirror
+```
+
+**View mirrored content:**
+```bash
+# Check logs for the latest CID
+docker compose logs publisher-agent | grep "Site CID"
+
+# Access via IPFS gateway
+http://localhost:8081/ipfs/<CID>/
+```
+
+See [MIRRORING.md](./MIRRORING.md) for detailed documentation.
+
+### 4. Publish Anonymously
 
 (Coming in Day 2)
 - Export content to IPFS
 - Generate signed manifest
 - Announce to discovery network
 
-### 4. Discover Others
+### 5. Discover Others
 
 (Coming in Day 4)
 - Browse manifests from other publishers
