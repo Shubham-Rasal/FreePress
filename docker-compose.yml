@@ -32,6 +32,7 @@ services:
     depends_on:
       - db
       - onionize
+  
   # --- IPFS Node ---
   ipfs:
     image: ipfs/kubo:latest
@@ -67,6 +68,25 @@ services:
       - cluster_data:/data/ipfs-cluster
     restart: unless-stopped
   
+  # --- Publisher Agent (Mirroring Sidecar) ---
+  publisher-agent:
+    build:
+      context: ./publisher-agent
+      dockerfile: Dockerfile
+    container_name: publisher-agent
+    environment:
+      - IPFS_HOST=ipfs
+      - IPFS_PORT=5001
+      - WORDPRESS_HOST=wordpress
+      - WORDPRESS_PORT=80
+      - MIRROR_INTERVAL=3600000  # 1 hour (in milliseconds)
+      - PORT=3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      - wordpress
+      - ipfs
+    restart: unless-stopped
   
 
 volumes:
