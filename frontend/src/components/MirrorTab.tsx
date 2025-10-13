@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const IPFS_API_URL = 'http://localhost:5001';
 
 interface MirroredContent {
   cid: string;
@@ -12,61 +12,91 @@ interface MirroredContent {
   pinned_at: number;
 }
 
+interface IPFSFileLink {
+  Name: string;
+  Hash: string;
+  Size: number;
+  Type: number;
+}
+
 function MirrorTab() {
   const [mirrors, setMirrors] = useState<MirroredContent[]>([]);
+  const [ipfsFiles, setIpfsFiles] = useState<IPFSFileLink[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ipfsLoading, setIpfsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ipfsError, setIpfsError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchMirrors();
+    fetchIPFSFiles();
   }, []);
 
-  const fetchMirrors = async () => {
+
+
+  const fetchIPFSFiles = async () => {
     try {
-      setLoading(true);
-      const response = await axios.get(`${API_URL}/api/manifests`);
-      setMirrors(response.data.manifests || []);
-      setError(null);
+      setIpfsLoading(true);
+      
+      // Step 1: Get MFS root stat to get the directory CID
+      const statResponse = await axios.post(
+        `${IPFS_API_URL}/api/v0/files/stat?arg=/`,
+        null,
+        {
+          headers: {
+            'Accept': '*/*'
+          }
+        }
+      );
+
+      console.log('IPFS stat response:', statResponse.data);
+
+      // Step 2: If it's a directory, list its contents using the Hash
+      const files: IPFSFileLink[] = [];
+      
+      if (statResponse.data && statResponse.data.Type === 'directory' && statResponse.data.Hash) {
+        const dirCID = statResponse.data.Hash;
+        
+        // Use /api/v0/ls to list directory contents
+        const lsResponse = await axios.post(
+          `${IPFS_API_URL}/api/v0/ls?arg=${dirCID}`,
+          null,
+          {
+            headers: {
+              'Accept': '*/*'
+            }
+          }
+        );
+
+        console.log('IPFS ls response:', lsResponse.data);
+
+        // Parse the ls response - format: { Objects: [{ Hash: "...", Links: [...] }] }
+        if (lsResponse.data && lsResponse.data.Objects && lsResponse.data.Objects.length > 0) {
+          const rootObject = lsResponse.data.Objects[0];
+          if (rootObject.Links && Array.isArray(rootObject.Links)) {
+            rootObject.Links.forEach((link: IPFSFileLink) => {
+              files.push({
+                Name: link.Name,
+                Hash: link.Hash,
+                Size: link.Size,
+                Type: link.Type
+              });
+            });
+          }
+        }
+      }
+      
+      setIpfsFiles(files);
+      setIpfsError(null);
     } catch (err: any) {
-      console.error('Failed to fetch mirrors:', err);
-      setError(err.response?.data?.error || err.message);
+      console.error('Failed to fetch IPFS files:', err);
+      setIpfsError(err.response?.data?.Message || err.message || 'Failed to connect to IPFS node');
     } finally {
-      setLoading(false);
+      setIpfsLoading(false);
     }
   };
 
-  const handleMirror = async (manifestCid: string) => {
-    try {
-      setActionLoading(manifestCid);
-      await axios.post(`${API_URL}/api/mirror`, { cid: manifestCid });
-      await fetchMirrors();
-      setError(null);
-    } catch (err: any) {
-      console.error('Failed to mirror content:', err);
-      setError(err.response?.data?.error || err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleUnpin = async (cid: string) => {
-    if (!confirm('Are you sure you want to stop mirroring this content?')) {
-      return;
-    }
-
-    try {
-      setActionLoading(cid);
-      await axios.delete(`${API_URL}/api/mirror/${cid}`);
-      await fetchMirrors();
-      setError(null);
-    } catch (err: any) {
-      console.error('Failed to unpin content:', err);
-      setError(err.response?.data?.error || err.message);
-    } finally {
-      setActionLoading(null);
-    }
-  };
+ 
 
   const formatBytes = (bytes?: number) => {
     if (!bytes) return 'Unknown';
@@ -98,24 +128,7 @@ function MirrorTab() {
       )}
 
       {/* Loading State */}
-      {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#37322F]"></div>
-        </div>
-      ) : mirrors.length === 0 ? (
-        <div className="text-center py-12 px-6 bg-white rounded-lg border border-[#E0DEDB]">
-          <p className="text-[#605A57] text-base mb-2">No mirrored content yet</p>
-          <p className="text-[#828387] text-sm mb-6">
-            Visit the Explore tab to discover and mirror publications
-          </p>
-          <button
-            onClick={() => window.location.hash = 'explore'}
-            className="px-6 py-2 bg-[#37322F] text-white rounded-full font-medium text-sm hover:bg-[#49423D] transition-colors"
-          >
-            Explore Network
-          </button>
-        </div>
-      ) : (
+      
         <>
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -154,18 +167,18 @@ function MirrorTab() {
                       <span>Pinned: {new Date(mirror.pinned_at * 1000).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleUnpin(mirror.cid)}
-                      disabled={actionLoading === mirror.cid}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
-                        actionLoading === mirror.cid
-                          ? 'bg-[#E0DEDB] text-[#828387] cursor-not-allowed border-[#E0DEDB]'
-                          : 'bg-white text-red-600 hover:bg-red-50 border-red-200'
-                      }`}
-                    >
-                      {actionLoading === mirror.cid ? 'Unpinning...' : 'Stop Mirroring'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {}}
+                        disabled={actionLoading === mirror.cid}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
+                          actionLoading === mirror.cid
+                            ? 'bg-[#E0DEDB] text-[#828387] cursor-not-allowed border-[#E0DEDB]'
+                            : 'bg-white text-red-600 hover:bg-red-50 border-red-200'
+                        }`}
+                      >
+                        {actionLoading === mirror.cid ? 'Unpinning...' : 'Stop Mirroring'}
+                      </button>
                   </div>
                 </div>
 
@@ -185,20 +198,145 @@ function MirrorTab() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-[#E0DEDB]">
-                  <a
-                    href={`https://ipfs.io/ipfs/${mirror.site_cid}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-[#37322F] underline hover:text-[#49423D]"
-                  >
-                    View on IPFS Gateway →
-                  </a>
+                  <p className="text-xs text-[#828387] mb-2">View content on:</p>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href={`https://ipfs.io/ipfs/${mirror.site_cid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#37322F] underline hover:text-[#49423D]"
+                    >
+                      ipfs.io →
+                    </a>
+                    <a
+                      href={`https://${mirror.site_cid}.ipfs.dweb.link/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 underline hover:text-blue-800"
+                    >
+                      dweb.link →
+                    </a>
+                    <a
+                      href={`http://127.0.0.1:8080/ipfs/${mirror.site_cid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-green-600 underline hover:text-green-800"
+                    >
+                      local gateway →
+                    </a>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </>
-      )}
+      
+
+      {/* IPFS Added Content */}
+      <div className="mt-8 p-6 bg-white border border-[#E0DEDB] rounded-lg">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-[#37322F] font-sans">IPFS Added Content</h3>
+          <button
+            onClick={fetchIPFSFiles}
+            disabled={ipfsLoading}
+            className="px-4 py-2 text-sm bg-[#37322F] text-white rounded-full hover:bg-[#49423D] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {ipfsLoading ? 'Refreshing...' : 'Refresh Files'}
+          </button>
+        </div>
+
+        {ipfsError && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              ⚠️ {ipfsError}
+            </p>
+            <p className="text-xs text-yellow-600 mt-1">
+              Make sure the IPFS node is running and accessible at {IPFS_API_URL}
+            </p>
+          </div>
+        )}
+
+        {ipfsLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#37322F]"></div>
+          </div>
+        ) : ipfsFiles.length === 0 ? (
+          <div className="text-center py-8 px-6 bg-[#F7F5F3] rounded-lg">
+            <p className="text-[#605A57] text-sm">No files found in IPFS MFS root directory</p>
+            <p className="text-xs text-[#828387] mt-2">
+              Add content using: <code className="bg-white px-2 py-1 rounded">ipfs files cp /ipfs/[CID] /filename</code>
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-[#605A57] mb-3">
+              Total files: <span className="font-semibold text-[#37322F]">{ipfsFiles.length}</span>
+            </p>
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {ipfsFiles.map((file, index) => (
+                <div
+                  key={`${file.Hash}-${index}`}
+                  className="p-4 bg-[#F7F5F3] rounded-md border border-[#E0DEDB] hover:bg-[#F0EDEA] transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          file.Type === 1 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : file.Type === 2
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {file.Type === 1 ? 'Directory' : file.Type === 2 ? 'File' : `Type ${file.Type}`}
+                        </span>
+                        <span className="text-xs text-[#828387]">
+                          {formatBytes(file.Size)}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium text-[#37322F] mb-1">
+                        {file.Name}
+                      </p>
+                      <code className="block text-xs font-mono text-[#605A57] break-all mb-2">
+                        {file.Hash}
+                      </code>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <a
+                          href={`https://ipfs.io/ipfs/${file.Hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#37322F] hover:text-[#49423D] underline"
+                          title="View on ipfs.io gateway"
+                        >
+                          ipfs.io →
+                        </a>
+                        <a
+                          href={`https://${file.Hash}.ipfs.dweb.link/`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-800 underline"
+                          title="View on dweb.link gateway"
+                        >
+                          dweb.link →
+                        </a>
+                        <a
+                          href={`http://127.0.0.1:8080/ipfs/${file.Hash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-green-600 hover:text-green-800 underline"
+                          title="View on local IPFS gateway"
+                        >
+                          local →
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Mirror Settings */}
       <div className="mt-8 p-6 bg-white border border-[#E0DEDB] rounded-lg">
