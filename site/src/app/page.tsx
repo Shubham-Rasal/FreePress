@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import SmartSimpleBrilliant from "../components/smart-simple-brilliant"
-import YourWorkInSync from "../components/your-work-in-sync"
 import EffortlessIntegration from "../components/effortless-integration-updated"
 import NumbersThatSpeak from "../components/numbers-that-speak"
 import FooterSection from "../components/footer-section"
@@ -332,14 +331,7 @@ export default function LandingPage() {
                           Every update flows instantly across your team and keeps collaboration effortless and fast.
                         </p>
                       </div>
-                      <div className="w-full h-[200px] sm:h-[250px] md:h-[300px] rounded-lg flex overflow-hidden text-right items-center justify-center">
-                        <YourWorkInSync
-                          width="400"
-                          height="250"
-                          theme="light"
-                          className="scale-60 sm:scale-75 md:scale-90"
-                        />
-                      </div>
+                     
                     </div>
 
                     {/* Bottom Left - Effortless integration */}
