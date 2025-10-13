@@ -27,11 +27,12 @@ services:
       - WORDPRESS_DB_PASSWORD=wordpress
       - WORDPRESS_DB_NAME=wordpress
     ports:
-      - "8080:80"
+      - "80:80"
     restart: unless-stopped
     depends_on:
       - db
       - onionize
+      
   # --- IPFS Node ---
   ipfs:
     image: ipfs/kubo:latest
