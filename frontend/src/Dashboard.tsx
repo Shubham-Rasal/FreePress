@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import StatusTab from './components/StatusTab';
 import PublishTab from './components/PublishTab';
 import ExploreTab from './components/ExploreTab';
 import MirrorTab from './components/MirrorTab';
@@ -27,25 +25,8 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
-  const fetchStatus = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_URL}/api/status`);
-      setStatus(response.data);
-      setError(null);
-    } catch (err: any) {
-      console.error('Failed to fetch status:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const tabs = [
     { id: 'status', label: 'Status', icon: '📊' },
@@ -134,7 +115,6 @@ function Dashboard() {
 
               {/* Tab Content */}
               <div className="w-full max-w-[960px] lg:w-[960px] bg-white shadow-[0px_0px_0px_0.9056603908538818px_rgba(0,0,0,0.08)] rounded-[9.06px] overflow-hidden">
-                {activeTab === 'status' && <StatusTab status={status} loading={loading} error={error} />}
                 {activeTab === 'publish' && <PublishTab />}
                 {activeTab === 'explore' && <ExploreTab />}
                 {activeTab === 'mirror' && <MirrorTab />}

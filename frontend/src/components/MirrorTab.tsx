@@ -74,9 +74,6 @@ function MirrorTab() {
     }
   };
 
-
-  
-
   const fetchIPFSFiles = async () => {
     try {
       setIpfsLoading(true);
@@ -85,7 +82,6 @@ function MirrorTab() {
       const statResponse = await axios.post(
         `${IPFS_API_URL}/api/v0/files/stat?arg=/site`,
         null,
-
         {
           headers: {
             'Accept': '*/*',
@@ -183,23 +179,6 @@ function MirrorTab() {
       {/* Loading State */}
       
         <>
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="p-4 bg-[#F7F5F3] rounded-lg border border-[#E0DEDB]">
-              <p className="text-xs text-[#828387] mb-1">Total Mirrors</p>
-              <p className="text-2xl font-semibold text-[#37322F]">{mirrors.length}</p>
-            </div>
-            <div className="p-4 bg-[#F7F5F3] rounded-lg border border-[#E0DEDB]">
-              <p className="text-xs text-[#828387] mb-1">Total Storage</p>
-              <p className="text-2xl font-semibold text-[#37322F]">
-                {formatBytes(mirrors.reduce((acc, m) => acc + (m.size || 0), 0))}
-              </p>
-            </div>
-            <div className="p-4 bg-[#F7F5F3] rounded-lg border border-[#E0DEDB]">
-              <p className="text-xs text-[#828387] mb-1">Status</p>
-              <p className="text-2xl font-semibold text-green-600">Active</p>
-            </div>
-          </div>
 
           {/* Mirrored Content List */}
           <div className="space-y-4">
@@ -260,22 +239,6 @@ function MirrorTab() {
                       className="text-sm text-[#37322F] underline hover:text-[#49423D]"
                     >
                       ipfs.io →
-                    </a>
-                    <a
-                      href={`https://${mirror.site_cid}.ipfs.dweb.link/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 underline hover:text-blue-800"
-                    >
-                      dweb.link →
-                    </a>
-                    <a
-                      href={`http://127.0.0.1:8080/ipfs/${mirror.site_cid}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-green-600 underline hover:text-green-800"
-                    >
-                      local gateway →
                     </a>
                   </div>
                 </div>
@@ -363,24 +326,7 @@ function MirrorTab() {
                         >
                           ipfs.io →
                         </a>
-                        <a
-                          href={`https://${file.Hash}.ipfs.dweb.link/`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-blue-600 hover:text-blue-800 underline"
-                          title="View on dweb.link gateway"
-                        >
-                          dweb.link →
-                        </a>
-                        <a
-                          href={`http://127.0.0.1:8080/ipfs/${file.Hash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-green-600 hover:text-green-800 underline"
-                          title="View on local IPFS gateway"
-                        >
-                          local →
-                        </a>
+                       
                       </div>
                     </div>
                   </div>
