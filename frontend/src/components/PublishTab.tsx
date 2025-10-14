@@ -41,10 +41,31 @@ function PublishTab() {
   const [currentJob, setCurrentJob] = useState<MirrorJob | null>(null);
   const [mirrorLoading, setMirrorLoading] = useState(false);
   const [mirrorError, setMirrorError] = useState<string | null>(null);
+  
+  // Onion URL state
+  const [onionUrl, setOnionUrl] = useState<string | null>(null);
+  const [onionLoading, setOnionLoading] = useState(true);
 
   useEffect(() => {
     fetchWordPressMirrors();
+    fetchOnionUrl();
   }, []);
+
+  // Fetch onion URL from backend
+  const fetchOnionUrl = async () => {
+    try {
+      setOnionLoading(true);
+      const response = await axios.get(`${API_URL}/api/mirror/onion-url`);
+      if (response.data.success && response.data.onionUrl) {
+        setOnionUrl(response.data.onionUrl);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch onion URL:', err);
+      // Don't show error, onion service might not be ready yet
+    } finally {
+      setOnionLoading(false);
+    }
+  };
 
   // Fetch WordPress mirrors from backend
   const fetchWordPressMirrors = async () => {
@@ -185,6 +206,52 @@ function PublishTab() {
   return (
     <div className="p-6 sm:p-8 md:p-10 lg:p-12">
       <h2 className="text-2xl font-semibold text-[#37322F] mb-6 font-sans">Publish Content</h2>
+
+      {/* Onion URL Display */}
+      <div className="mb-8 p-6 bg-[#F7F5F3] rounded-lg border border-[#E0DEDB]">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-[#37322F] mb-2 font-sans flex items-center gap-2">
+              <span className="text-xl">🧅</span>
+              Tor Onion Address
+            </h3>
+            {onionLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#37322F]"></div>
+                <span className="text-sm text-[#605A57]">Fetching onion address...</span>
+              </div>
+            ) : onionUrl ? (
+              <>
+                <div className="flex items-center gap-2 p-3 bg-white rounded-md border border-[#E0DEDB] mb-2">
+                  <code className="flex-1 text-sm font-mono text-[#37322F] break-all">
+                    {onionUrl}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(onionUrl)}
+                    className="px-3 py-1.5 bg-[#E0DEDB] text-[#37322F] rounded text-xs font-medium hover:bg-[#EAE8E3] transition-colors flex-shrink-0"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="text-xs text-[#605A57]">
+                  Your WordPress site is accessible via Tor at this address. Share this with readers who want anonymous access.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-[#605A57]">
+                Onion service not available yet. Make sure the onionize container is running.
+              </p>
+            )}
+          </div>
+          <button
+            onClick={fetchOnionUrl}
+            disabled={onionLoading}
+            className="px-4 py-2 bg-[#37322F] text-white rounded-full text-sm font-medium hover:bg-[#49423D] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+          >
+            {onionLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+      </div>
 
       {/* WordPress Mirror Section */}
       <div className="mb-8 p-6 bg-[#F7F5F3] rounded-lg border border-[#E0DEDB]">
