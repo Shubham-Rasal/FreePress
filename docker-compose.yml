@@ -49,6 +49,16 @@ services:
     volumes:
       - static_site:/site
       - ipfs_data:/data/ipfs
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "ipfs daemon & 
+      sleep 10 &&
+      while true; do
+        ipfs files rm -r /site || true;
+        ipfs add -r /site/localhost --to-files /site;
+        echo 'Synced to MFS at' $(date);
+        sleep 60;
+      done"
     restart: unless-stopped
   
   # --- IPFS Cluster Peer ---
