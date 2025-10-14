@@ -54,12 +54,12 @@ function ExploreTab() {
               {nodeStatus !== 'simulation' && ` • Status: ${nodeStatus}`}
             </p>
           </div>
-          <button
+          {/* <button
             onClick={simulatePublish}
             className="px-5 py-2 bg-blue-600 text-white rounded-full font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
           >
             📢 {nodeStatus === 'simulation' ? 'Simulate' : 'Publish'}
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -150,38 +150,105 @@ function ExploreTab() {
                 </div>
               </div>
 
-              {/* CIDs */}
-              <div className="space-y-2 mb-4">
-                <div>
-                  <p className="text-xs text-[#828387] mb-1">Site CID:</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs font-mono text-[#37322F] bg-white p-2 rounded border border-[#E0DEDB] break-all">
-                      {manifest.site_cid}
-                    </code>
-                    <button
-                      onClick={() => copyToClipboard(manifest.site_cid)}
-                      className="px-2 py-1 bg-white text-[#37322F] rounded text-xs font-medium hover:bg-[#E0DEDB] transition-colors border border-[#E0DEDB]"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                </div>
-                
-                <div>
-                  <p className="text-xs text-[#828387] mb-1">Publisher (Public Key):</p>
-                  <code className="block text-xs font-mono text-[#605A57] bg-white p-2 rounded border border-[#E0DEDB] break-all">
-                    {manifest.pubkey}
-                  </code>
-                </div>
+              {/* Authentication & Manifest Details */}
+              <div className="space-y-3 mb-4">
+                <div className="p-4 bg-white rounded-lg border border-[#E0DEDB]">
+                  <h4 className="text-sm font-semibold text-[#37322F] mb-3 flex items-center gap-2">
+                    🔐 Authentication Details
+                  </h4>
+                  
+                  <div className="space-y-3">
+                    {/* Version */}
+                    <div>
+                      <p className="text-xs text-[#828387] mb-1">Manifest Version:</p>
+                      <code className="block text-xs font-mono text-[#605A57] bg-[#F7F5F3] p-2 rounded">
+                        1.0
+                      </code>
+                    </div>
 
-                {manifest.onion_url && (
-                  <div>
-                    <p className="text-xs text-[#828387] mb-1">Tor Onion URL:</p>
-                    <code className="block text-xs font-mono text-[#605A57] bg-white p-2 rounded border border-[#E0DEDB] break-all">
-                      {manifest.onion_url}
-                    </code>
+                    {/* Site CID */}
+                    <div>
+                      <p className="text-xs text-[#828387] mb-1">Site CID:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-xs font-mono text-[#37322F] bg-[#F7F5F3] p-2 rounded break-all">
+                          {manifest.site_cid}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(manifest.site_cid)}
+                          className="px-2 py-1 bg-[#E0DEDB] text-[#37322F] rounded text-xs font-medium hover:bg-[#EAE8E3] transition-colors flex-shrink-0"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Timestamp */}
+                    <div>
+                      <p className="text-xs text-[#828387] mb-1">Timestamp:</p>
+                      <code className="block text-xs font-mono text-[#605A57] bg-[#F7F5F3] p-2 rounded">
+                        {manifest.timestamp}
+                      </code>
+                    </div>
+
+                    {/* Publisher Public Key */}
+                    <div>
+                      <p className="text-xs text-[#828387] mb-1">Publisher (Public Key):</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-xs font-mono text-[#605A57] bg-[#F7F5F3] p-2 rounded break-all">
+                          {manifest.pubkey}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(manifest.pubkey)}
+                          className="px-2 py-1 bg-[#E0DEDB] text-[#37322F] rounded text-xs font-medium hover:bg-[#EAE8E3] transition-colors flex-shrink-0"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Signature */}
+                    <div>
+                      <p className="text-xs text-[#828387] mb-1">Signature (Ed25519):</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-xs font-mono text-[#605A57] bg-[#F7F5F3] p-2 rounded break-all">
+                          {manifest.signature}
+                        </code>
+                        <button
+                          onClick={() => copyToClipboard(manifest.signature)}
+                          className="px-2 py-1 bg-[#E0DEDB] text-[#37322F] rounded text-xs font-medium hover:bg-[#EAE8E3] transition-colors flex-shrink-0"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Onion URL if available */}
+                    {manifest.onion_url && (
+                      <div>
+                        <p className="text-xs text-[#828387] mb-1">Tor Onion URL:</p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-xs font-mono text-[#37322F] bg-[#F7F5F3] p-2 rounded break-all">
+                            {manifest.onion_url}
+                          </code>
+                          <button
+                            onClick={() => copyToClipboard(manifest.onion_url!)}
+                            className="px-2 py-1 bg-[#E0DEDB] text-[#37322F] rounded text-xs font-medium hover:bg-[#EAE8E3] transition-colors flex-shrink-0"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Verification Note */}
+                    <div className="pt-2 border-t border-[#E0DEDB]">
+                      <p className="text-xs text-[#605A57] flex items-start gap-2">
+                        <span className="text-green-600">✓</span>
+                        <span>This manifest is cryptographically signed by the publisher. The signature can be verified using the public key and Ed25519 algorithm.</span>
+                      </p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Actions */}
@@ -194,14 +261,7 @@ function ExploreTab() {
                 >
                   View on IPFS →
                 </a>
-                {manifest.onion_url && (
-                  <button
-                    onClick={() => copyToClipboard(manifest.onion_url!)}
-                    className="px-4 py-2 bg-white text-[#37322F] rounded-full text-sm font-medium hover:bg-[#E0DEDB] transition-colors border border-[#E0DEDB]"
-                  >
-                    Copy Onion URL
-                  </button>
-                )}
+              
                 <button
                   className="px-4 py-2 bg-white text-[#37322F] rounded-full text-sm font-medium hover:bg-[#E0DEDB] transition-colors border border-[#E0DEDB]"
                 >
@@ -214,17 +274,45 @@ function ExploreTab() {
       )}
 
       {/* Info Box */}
-      <div className="mt-8 p-6 bg-white border border-[#E0DEDB] rounded-lg">
-        <h3 className="text-base font-semibold text-[#37322F] mb-3 font-sans">About Discovery with Waku</h3>
-        <p className="text-sm text-[#605A57] mb-3">
-          Publications are announced to the network via <strong>Waku</strong> (a privacy-preserving libp2p pubsub protocol). Discovery nodes listen for announcements, fetch and verify manifests, then pin the content to IPFS.
-        </p>
-        <p className="text-sm text-[#605A57] mb-3">
-          Each publication is cryptographically signed by the publisher's Ed25519 key, ensuring authenticity and preventing tampering.
-        </p>
-        <p className="text-xs text-[#828387]">
-          Waku provides store-and-relay capabilities, allowing nodes to retrieve historical messages even when publishers are offline.
-        </p>
+      <div className="mt-8 space-y-4">
+        <div className="p-6 bg-white border border-[#E0DEDB] rounded-lg">
+          <h3 className="text-base font-semibold text-[#37322F] mb-3 font-sans">About Discovery with Waku</h3>
+          <p className="text-sm text-[#605A57] mb-3">
+            Publications are announced to the network via <strong>Waku</strong> (a privacy-preserving libp2p pubsub protocol). Discovery nodes listen for announcements, fetch and verify manifests, then pin the content to IPFS.
+          </p>
+          <p className="text-sm text-[#605A57] mb-3">
+            Each publication is cryptographically signed by the publisher's Ed25519 key, ensuring authenticity and preventing tampering.
+          </p>
+          <p className="text-xs text-[#828387]">
+            Waku provides store-and-relay capabilities, allowing nodes to retrieve historical messages even when publishers are offline.
+          </p>
+        </div>
+
+        <div className="p-6 bg-green-50 border border-green-200 rounded-lg">
+          <h3 className="text-base font-semibold text-green-900 mb-3 font-sans flex items-center gap-2">
+            🔐 Verifying Authenticity
+          </h3>
+          <p className="text-sm text-green-800 mb-3">
+            Each manifest contains all the information needed to verify its authenticity:
+          </p>
+          <ol className="text-sm text-green-800 space-y-2 ml-4">
+            <li className="flex items-start gap-2">
+              <span className="font-semibold">1.</span>
+              <span><strong>Manifest Data</strong>: The JSON object containing version, site_cid, timestamp, and publisher</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-semibold">2.</span>
+              <span><strong>Publisher Public Key</strong>: The Ed25519 public key used to verify the signature</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-semibold">3.</span>
+              <span><strong>Signature</strong>: The cryptographic signature that proves the publisher created this manifest</span>
+            </li>
+          </ol>
+          <p className="text-xs text-green-700 mt-3 pt-3 border-t border-green-200">
+            You can verify the signature using the Ed25519 verification algorithm with the public key and the JSON-stringified manifest data. This ensures that the content hasn't been tampered with and was published by the claimed identity.
+          </p>
+        </div>
       </div>
     </div>
   );

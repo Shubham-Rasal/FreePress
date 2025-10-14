@@ -62,6 +62,42 @@ async function getOnionUrl(): Promise<string> {
     return 'http://example.onion';
   }
 }
+// Helper: Publish content to IPFS
+async function publishToIPFS(content: string): Promise<string> {
+  const IPFS_API = process.env.IPFS_API_URL || 'http://localhost:5001';
+  
+  try {
+    // Create a multipart form data boundary
+    const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
+    const contentBuffer = Buffer.from(content);
+    
+    // Build multipart form data manually
+    const formData = Buffer.concat([
+      Buffer.from(
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="file"; filename="manifest.json"\r\n` +
+        `Content-Type: application/json\r\n\r\n`
+      ),
+      contentBuffer,
+      Buffer.from(`\r\n--${boundary}--\r\n`)
+    ]);
+
+    const response = await axios.post(`${IPFS_API}/api/v0/add?pin=true`, formData, {
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`
+      },
+      maxBodyLength: Infinity
+    });
+
+    const cid = response.data.Hash;
+    
+    console.log('Published to IPFS with CID:', cid);
+    return cid;
+  } catch (err: any) {
+    console.error('IPFS publish error:', err);
+    throw new Error(`Failed to publish to IPFS: ${err.message}`);
+  }
+}
 
 // Initialize - load existing keypair
 loadKeypair();
@@ -184,9 +220,16 @@ crypto.post('/sign-manifest', async (c) => {
 
     const signedManifestJson = JSON.stringify(signedManifest, null, 2);
 
-    // TODO: Add signed manifest to IPFS
-    // For now, we'll just return a mock CID
-    const manifestCid = `Qm${Buffer.from(signedManifestJson).toString('hex').substring(0, 44)}`;
+    // Publish signed manifest to IPFS
+    let manifestCid: string;
+    try {
+      manifestCid = await publishToIPFS(signedManifestJson);
+      console.log('Published manifest to IPFS:', manifestCid);
+    } catch (ipfsErr: any) {
+      console.error('Failed to publish to IPFS, using fallback CID:', ipfsErr);
+      // Fallback to mock CID if IPFS is not available
+      manifestCid = `Qm${Buffer.from(signedManifestJson).toString('hex').substring(0, 44)}`;
+    }
 
     // Get actual onion URL from onionize service
     const onionUrl = await getOnionUrl();

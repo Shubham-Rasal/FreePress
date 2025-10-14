@@ -243,7 +243,6 @@ export function useWakuDiscovery(enableSimulation = false) {
       title: manifest.title || '',
       description: manifest.description || '',
       tags: manifest.tags ? manifest.tags.join(',') : '',
-      onion_url: manifest.onion_url || '',
       mirror_count: manifest.mirror_count || 0,
     });
 

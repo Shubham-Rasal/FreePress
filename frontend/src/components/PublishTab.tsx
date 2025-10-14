@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useWakuDiscovery } from '../hooks/useWakuDiscovery';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const IPFS_API = import.meta.env.VITE_IPFS_API_URL || 'http://localhost:5001';
 
 interface PublishResult {
   site_cid?: string;
@@ -46,6 +48,14 @@ function PublishTab() {
   const [onionUrl, setOnionUrl] = useState<string | null>(null);
   const [onionLoading, setOnionLoading] = useState(true);
 
+  // Publication metadata
+  const [publicationTitle, setPublicationTitle] = useState<string>('');
+  const [publicationDescription, setPublicationDescription] = useState<string>('');
+  const [publicationTags, setPublicationTags] = useState<string>('');
+
+  // Waku discovery hook
+  const { publishManifest, nodeStatus, error: wakuError } = useWakuDiscovery(false);
+
   useEffect(() => {
     fetchWordPressMirrors();
     fetchOnionUrl();
@@ -67,15 +77,72 @@ function PublishTab() {
     }
   };
 
-  // Fetch WordPress mirrors from backend
+  // Get CID from IPFS using the onion address
+  const getCIDFromIPFS = async (): Promise<string | null> => {
+    try {
+      // The IPFS container adds content to MFS at /site/{onion_address}
+      // We need to get the onion address to construct the correct path
+      
+      // First, get the onion URL if we don't have it cached
+      let currentOnionUrl = onionUrl;
+      if (!currentOnionUrl) {
+        try {
+          const onionResponse = await axios.get(`${API_URL}/api/mirror/onion-url`);
+          if (onionResponse.data.success && onionResponse.data.onionUrl) {
+            currentOnionUrl = onionResponse.data.onionUrl;
+          }
+        } catch (err) {
+          console.log('Could not fetch onion URL for CID lookup');
+          return null;
+        }
+      }
+      
+      if (!currentOnionUrl) {
+        console.log('No onion URL available for CID lookup');
+        return null;
+      }
+      
+      // Extract onion address (remove http:// and .onion)
+      const onionAddress = currentOnionUrl.replace('http://', '').replace('.onion', '').trim();
+      const mfsPath = `/site/${onionAddress}.onion`;
+      
+      console.log(`Querying IPFS MFS path: ${mfsPath}`);
+      
+      // Try to get the CID from MFS (Mutable File System)
+      const response = await axios.post(`${IPFS_API}/api/v0/files/stat?arg=${encodeURIComponent(mfsPath)}`);
+      
+      if (response.data && response.data.Hash) {
+        console.log(`✓ Got CID for ${mfsPath}:`, response.data.Hash);
+        return response.data.Hash;
+      }
+      return null;
+    } catch (err: any) {
+      // MFS path might not exist yet
+      console.log(`No CID yet for mirror:`, err.message);
+      return null;
+    }
+  };
+
+  // Fetch WordPress mirrors from backend and enrich with IPFS CIDs
   const fetchWordPressMirrors = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/mirror/sites`);
-      setWpMirrors(response.data.sites || []);
+      const sites = response.data.sites || [];
+      
+      // Fetch IPFS CID (same for all mirrors since they share the same onion address)
+      const cid = await getCIDFromIPFS();
+      
+      const sitesWithCIDs = sites.map((site: WordPressMirror) => ({
+        ...site,
+        ipfsCid: cid || site.ipfsCid, // Use fetched CID or existing one
+        isPinned: !!cid, // If we got a CID, it's pinned
+      }));
+      
+      setWpMirrors(sitesWithCIDs);
       
       // Auto-select the most recent mirror if available
-      if (response.data.sites && response.data.sites.length > 0) {
-        setSelectedMirror(response.data.sites[0].id);
+      if (sitesWithCIDs.length > 0) {
+        setSelectedMirror(sitesWithCIDs[0].id);
       }
     } catch (err: any) {
       console.error('Failed to fetch WordPress mirrors:', err);
@@ -155,27 +222,84 @@ function PublishTab() {
       return;
     }
 
-    // Get the selected mirror's IPFS CID
-    const mirror = wpMirrors.find(m => m.id === selectedMirror);
-    if (!mirror?.ipfsCid) {
-      setError('Mirror not yet published to IPFS. Please wait for automatic IPFS sync (happens every 60 seconds).');
+    if (!publicationTitle.trim()) {
+      setError('Please provide a title for your publication');
       return;
     }
+
+    console.log(selectedMirror);
+
+    // Get the selected mirror's IPFS CID
+    let mirror = wpMirrors.find(m => m.id === selectedMirror);
+    
+    // If no CID yet, try fetching it directly from IPFS
+    if (!mirror?.ipfsCid) {
+      console.log('No CID found, fetching from IPFS...');
+      const cid = await getCIDFromIPFS();
+      if (cid && mirror) {
+        // Update the mirror with the fetched CID
+        const updatedMirror: WordPressMirror = { ...mirror, ipfsCid: cid, isPinned: true };
+        mirror = updatedMirror;
+        // Update state
+        setWpMirrors(prev => prev.map(m => m.id === selectedMirror ? updatedMirror : m));
+      }
+    }
+
 
     try {
       setPublishing(true);
       setError(null);
 
-      // Sign manifest with the automatically published IPFS CID
+      // Step 1: Sign manifest and publish to IPFS (on-chain)
+      console.log('📝 Step 1: Signing manifest and publishing to IPFS...');
       const signResponse = await axios.post(`${API_URL}/api/sign-manifest`, {
-        site_cid: mirror.ipfsCid,
+        site_cid: mirror?.ipfsCid,
       });
 
+      const manifestCid = signResponse.data.manifest_cid;
+      const siteCid = mirror?.ipfsCid;
+      const signature = signResponse.data.signature;
+      const onionUrlFromBackend = signResponse.data.onion_url;
+
+      console.log('✅ Manifest signed and published to IPFS:', manifestCid);
+
+      // Step 2: Announce via Waku discovery network
+      console.log('📡 Step 2: Announcing to Waku discovery network...');
+      
+      // Parse tags from comma-separated string
+      const parsedTags = publicationTags
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+      
+      try {
+        await publishManifest({
+          cid: manifestCid,
+          site_cid: siteCid || '',
+          pubkey: publicKey || signResponse.data.manifest.publisher,
+          signature: signature,
+          title: publicationTitle.trim(),
+          description: publicationDescription.trim() || undefined,
+          tags: parsedTags.length > 0 ? parsedTags : undefined,
+          onion_url: onionUrlFromBackend,
+          mirror_count: 0,
+        });
+        console.log('✅ Announced to Waku network');
+      } catch (wakuErr: any) {
+        console.error('⚠️ Waku announcement failed (continuing anyway):', wakuErr);
+        // Don't fail the whole process if Waku fails
+      }
+
       setPublishResult({
-        site_cid: mirror.ipfsCid,
-        manifest_cid: signResponse.data.manifest_cid,
-        onion_url: signResponse.data.onion_url,
+        site_cid: siteCid,
+        manifest_cid: manifestCid,
+        onion_url: onionUrlFromBackend,
       });
+      
+      // Clear publication metadata after successful publish
+      setPublicationTitle('');
+      setPublicationDescription('');
+      setPublicationTags('');
       
       // Refresh mirrors to show updated status
       await fetchWordPressMirrors();
@@ -318,7 +442,15 @@ function PublishTab() {
 
         {wpMirrors.length > 0 && (
           <div className="mt-4 pt-4 border-t border-[#E0DEDB]">
-            <p className="text-xs text-[#828387] mb-2">Available Mirrors:</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-[#828387]">Available Mirrors:</p>
+              <button
+                onClick={fetchWordPressMirrors}
+                className="text-xs text-[#37322F] underline hover:text-[#49423D]"
+              >
+                Refresh CIDs
+              </button>
+            </div>
             <div className="space-y-2">
               {wpMirrors.slice(0, 3).map((mirror) => (
                 <div key={mirror.id} className="flex items-center justify-between p-2 bg-white rounded border border-[#E0DEDB]">
@@ -327,10 +459,19 @@ function PublishTab() {
                     <p className="text-xs text-[#828387]">
                       {formatBytes(mirror.size)} • {mirror.fileCount || 0} files • {formatDate(mirror.createdAt)}
                     </p>
+                    {mirror.ipfsCid && (
+                      <p className="text-xs text-[#828387] mt-1 font-mono">
+                        CID: {mirror.ipfsCid.substring(0, 20)}...
+                      </p>
+                    )}
                   </div>
-                  {mirror.ipfsCid && (
+                  {mirror.ipfsCid ? (
                     <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                      Published
+                      ✓ Published
+                    </span>
+                  ) : (
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                      Pending
                     </span>
                   )}
                 </div>
@@ -381,8 +522,88 @@ function PublishTab() {
       <div className="mb-8">
         <h3 className="text-lg font-semibold text-[#37322F] mb-4 font-sans">Step 3: Sign & Announce</h3>
         <p className="text-sm text-[#605A57] mb-4">
-          Your mirror is automatically published to IPFS every 60 seconds. Create a signed manifest and announce your content to the discovery network.
+          Your mirror is automatically published to IPFS every 60 seconds. The CID is fetched directly from IPFS. Create a signed manifest and announce your content to the discovery network.
         </p>
+
+        {/* Waku Status Indicator */}
+        <div className="mb-4 p-3 bg-white border border-[#E0DEDB] rounded-md flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${
+              nodeStatus === 'healthy' ? 'bg-green-500' :
+              nodeStatus === 'minimal' ? 'bg-yellow-500' :
+              nodeStatus === 'unhealthy' ? 'bg-red-500' :
+              'bg-gray-400'
+            }`}></div>
+            <span className="text-xs text-[#605A57]">
+              Waku Discovery Network: {
+                nodeStatus === 'healthy' ? '🟢 Connected & Healthy' :
+                nodeStatus === 'minimal' ? '🟡 Connected (Minimal)' :
+                nodeStatus === 'unhealthy' ? '🔴 Disconnected' :
+                '⚪ Connecting...'
+              }
+            </span>
+          </div>
+          {wakuError && (
+            <span className="text-xs text-red-600">
+              Error: {wakuError.message}
+            </span>
+          )}
+        </div>
+
+        {/* Publication Metadata */}
+        <div className="mb-4 p-4 bg-white border border-[#E0DEDB] rounded-md">
+          <h4 className="text-sm font-semibold text-[#37322F] mb-3">Publication Metadata</h4>
+          <p className="text-xs text-[#605A57] mb-3">
+            Add details about your publication. This information will be included in the signed manifest and visible in the discovery network.
+          </p>
+          
+          <div className="space-y-3">
+            {/* Title */}
+            <div>
+              <label className="block text-xs text-[#828387] mb-1">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={publicationTitle}
+                onChange={(e) => setPublicationTitle(e.target.value)}
+                placeholder="e.g., My WordPress Blog"
+                className="w-full px-3 py-2 border border-[#E0DEDB] rounded-md text-sm focus:outline-none focus:border-[#37322F] bg-white"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs text-[#828387] mb-1">
+                Description (optional)
+              </label>
+              <textarea
+                value={publicationDescription}
+                onChange={(e) => setPublicationDescription(e.target.value)}
+                placeholder="e.g., A censorship-resistant blog covering technology and freedom"
+                rows={2}
+                className="w-full px-3 py-2 border border-[#E0DEDB] rounded-md text-sm focus:outline-none focus:border-[#37322F] bg-white resize-none"
+              />
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label className="block text-xs text-[#828387] mb-1">
+                Tags (optional, comma-separated)
+              </label>
+              <input
+                type="text"
+                value={publicationTags}
+                onChange={(e) => setPublicationTags(e.target.value)}
+                placeholder="e.g., blog, technology, freedom"
+                className="w-full px-3 py-2 border border-[#E0DEDB] rounded-md text-sm focus:outline-none focus:border-[#37322F] bg-white"
+              />
+              <p className="text-xs text-[#828387] mt-1">
+                Separate tags with commas. Tags help others discover your content.
+              </p>
+            </div>
+          </div>
+        </div>
         
         {!selectedMirror && wpMirrors.length === 0 && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
@@ -394,9 +615,9 @@ function PublishTab() {
 
         <button
           onClick={handlePublish}
-          disabled={publishing || (!hasKeypair && !publicKey) || !selectedMirror}
+          disabled={publishing || (!hasKeypair && !publicKey) || !selectedMirror || !publicationTitle.trim()}
           className={`px-6 py-3 rounded-full font-medium text-sm transition-colors ${
-            publishing || (!hasKeypair && !publicKey) || !selectedMirror
+            publishing || (!hasKeypair && !publicKey) || !selectedMirror || !publicationTitle.trim()
               ? 'bg-[#E0DEDB] text-[#828387] cursor-not-allowed'
               : 'bg-[#37322F] text-white hover:bg-[#49423D]'
           }`}
@@ -499,7 +720,7 @@ function PublishTab() {
         <ol className="space-y-2 text-sm text-[#605A57]">
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">1.</span>
-            <span>Your WordPress site is mirrored as static files using wget</span>
+            <span>Your WordPress site is mirrored as static files using wget via Tor</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">2.</span>
@@ -511,14 +732,22 @@ function PublishTab() {
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">4.</span>
-            <span>A manifest.json is created with metadata and signed with your private key</span>
+            <span>You add publication metadata (title, description, tags) to help others discover your content</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">5.</span>
-            <span>The manifest is announced to the discovery network via libp2p pubsub</span>
+            <span>A manifest.json is created with your metadata and signed with your private key</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">6.</span>
+            <span>The signed manifest is published to IPFS (on-chain storage)</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-semibold text-[#37322F]">7.</span>
+            <span>The manifest is announced to the Waku discovery network via ReliableChannel</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-semibold text-[#37322F]">8.</span>
             <span>Discovery nodes fetch, verify, and pin your content for resilience</span>
           </li>
         </ol>
