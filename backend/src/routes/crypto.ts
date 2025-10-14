@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { generateKeyPairSync, sign } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
+import axios from 'axios';
 
 const crypto = new Hono();
 
@@ -46,6 +47,20 @@ async function saveKeypair(publicKey: string, privateKey: string) {
   
   await fs.writeFile(publicKeyPath, publicKey, { mode: 0o644 });
   await fs.writeFile(privateKeyPath, privateKey, { mode: 0o600 });
+}
+
+// Helper: Get onion URL from onionize service
+async function getOnionUrl(): Promise<string> {
+  const hostnameFile = '/var/lib/tor/onion_services/wordpress/hostname';
+  
+  try {
+    const hostname = await fs.readFile(hostnameFile, 'utf-8');
+    return `http://${hostname.trim()}`;
+  } catch (err: any) {
+    console.error('Failed to read onion hostname:', err);
+    // Return placeholder if onion URL is not available
+    return 'http://example.onion';
+  }
 }
 
 // Initialize - load existing keypair
@@ -173,9 +188,8 @@ crypto.post('/sign-manifest', async (c) => {
     // For now, we'll just return a mock CID
     const manifestCid = `Qm${Buffer.from(signedManifestJson).toString('hex').substring(0, 44)}`;
 
-    // TODO: Get actual onion URL from WordPress container
-    // For now, return a placeholder
-    const onionUrl = 'http://example.onion';
+    // Get actual onion URL from onionize service
+    const onionUrl = await getOnionUrl();
 
     return c.json({
       success: true,

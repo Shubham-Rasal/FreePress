@@ -17,8 +17,8 @@ COPY . .
 # Build TypeScript
 RUN pnpm build
 
-# Install wget and curl for mirroring and healthcheck
-RUN apk add --no-cache wget curl
+# Install wget, curl, tor, and torsocks for mirroring through Tor
+RUN apk add --no-cache wget curl tor torsocks
 
 # Create static_site directory with proper permissions
 RUN mkdir -p /static_site && chmod 777 /static_site

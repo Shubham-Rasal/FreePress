@@ -83,11 +83,28 @@ mirror.get('/jobs', (c) => {
   return c.json({ jobs: allJobs });
 });
 
+// Get onion URL
+mirror.get('/onion-url', async (c) => {
+  try {
+    const onionUrl = await getOnionUrl();
+    return c.json({ 
+      success: true,
+      onionUrl: `http://${onionUrl}`
+    });
+  } catch (err: any) {
+    console.error('Failed to get onion URL:', err);
+    return c.json({ 
+      error: 'Failed to get onion URL',
+      message: err.message 
+    }, 500);
+  }
+});
+
 // List all mirrored sites
 mirror.get('/sites', async (c) => {
   try {
     // Scan the static_site directory for mirrored sites
-    const staticSiteDir = '/tmp/static_site';
+    const staticSiteDir = '/static_site';
     await scanMirroredSites(staticSiteDir);
     
     const allSites = Array.from(mirrors.values()).sort((a, b) => b.createdAt - a.createdAt);
@@ -101,50 +118,6 @@ mirror.get('/sites', async (c) => {
   }
 });
 
-// Publish a mirrored site to IPFS
-mirror.post('/publish/:siteId', async (c) => {
-  const siteId = c.req.param('siteId');
-  const site = mirrors.get(siteId);
-
-  if (!site) {
-    return c.json({ error: 'Site not found' }, 404);
-  }
-
-  try {
-    // Add the site directory to IPFS
-    const ipfsApiUrl = process.env.IPFS_API_URL || 'http://localhost:5001';
-
-    // Use IPFS API to add the directory
-    const { stdout } = await execAsync(`find ${site.path} -type f`);
-    const files = stdout.trim().split('\n').filter(f => f);
-
-    if (files.length === 0) {
-      return c.json({ error: 'No files found in site directory' }, 400);
-    }
-
-    console.log('Adding directory to IPFS:', site.path);
-    // For simplicity, we'll add the entire directory
-    // In a real implementation, you'd use the IPFS HTTP API multipart upload
-    const addResponse = await addDirectoryToIPFS(site.path, ipfsApiUrl);
-    
-    // Update the site with IPFS CID
-    site.ipfsCid = addResponse.cid;
-    site.isPinned = true;
-    mirrors.set(siteId, site);
-
-    return c.json({
-      success: true,
-      cid: addResponse.cid,
-      message: 'Site published to IPFS'
-    });
-  } catch (err: any) {
-    console.error('Failed to publish to IPFS:', err);
-    return c.json({ 
-      error: 'Failed to publish to IPFS',
-      message: err.message 
-    }, 500);
-  }
-});
 
 // Delete a mirrored site
 mirror.delete('/sites/:siteId', async (c) => {
@@ -183,7 +156,7 @@ async function startMirrorProcess(jobId: string) {
   job.status = 'running';
 
   try {
-    const staticSiteDir = '/tmp/static_site';
+    const staticSiteDir = '/static_site';
     const outputDir = `${staticSiteDir}/wordpress`;
     
     // Ensure static site directory exists with proper error handling
@@ -197,15 +170,28 @@ async function startMirrorProcess(jobId: string) {
     // Ensure output directory exists
     await fs.mkdir(outputDir, { recursive: true, mode: 0o777 });
     
-    // Wait for WordPress to be ready
+    // Get the onion URL
+    const onionUrl = await getOnionUrl();
+    console.log('Using onion URL:', onionUrl);
+    
+    // Start Tor service
+    console.log('Starting Tor service...');
+    try {
+      execAsync('tor &').catch(() => {}); // Start tor in background, ignore errors if already running
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds for Tor to start
+    } catch (torErr) {
+      console.log('Tor may already be running, continuing...');
+    }
+    
+    // Wait for WordPress to be ready via localhost (for health check)
     console.log('Checking if WordPress is ready...');
     await waitForWordPress('http://localhost:80/', 30);
     
-    console.log('WordPress is ready, starting mirror...');
+    console.log('WordPress is ready, starting mirror via Tor...');
     
-    // Run wget to mirror the WordPress site
-    // Using wget directly to create a static mirror
-    const wgetCommand = `wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --directory-prefix=${outputDir} http://localhost:80/`;
+    // Run wget through Tor to mirror the WordPress site via .onion URL
+    // Using torsocks to route through Tor
+    const wgetCommand = `torsocks wget --mirror --convert-links --adjust-extension --page-requisites --no-parent --directory-prefix=${outputDir} http://${onionUrl}/`;
     
     const { stdout, stderr } = await execAsync(wgetCommand, {
       maxBuffer: 50 * 1024 * 1024 // 50MB buffer for large sites
@@ -226,6 +212,19 @@ async function startMirrorProcess(jobId: string) {
     job.error = err.message;
     job.completedAt = Date.now();
     throw err;
+  }
+}
+
+// Helper: Get onion URL from onionize service
+async function getOnionUrl(): Promise<string> {
+  const hostnameFile = '/var/lib/tor/onion_services/wordpress/hostname';
+  
+  try {
+    const hostname = await fs.readFile(hostnameFile, 'utf-8');
+    return hostname.trim();
+  } catch (err: any) {
+    console.error('Failed to read onion hostname:', err);
+    throw new Error('Could not read onion hostname. Make sure onionize service is running.');
   }
 }
 
@@ -306,28 +305,6 @@ async function getDirectorySize(dir: string): Promise<number> {
   }
 }
 
-async function addDirectoryToIPFS(dirPath: string, ipfsApiUrl: string): Promise<{ cid: string }> {
-    try {
-        // POST /api/v0/add?recursive=true&to-files=/site2
-        const addUrl = `${ipfsApiUrl}/api/v0/add?recursive=true&quieter=true&pin=true&to-files=${encodeURIComponent(
-          '/site2'
-        )}&arg=${encodeURIComponent('/site')}`;
-
-        console.log('Adding directory to IPFS:', addUrl);
-    
-        const response = await axios.post(addUrl);
-    
-        // Response is newline-delimited JSON, last line is root CID
-        const lines = response.data.trim().split("\n");
-        const lastLine = JSON.parse(lines[lines.length - 1]);
-        const cid = lastLine.Hash;
-    
-        return { cid };
-      } catch (err: any) {
-        console.error("Failed to add directory to IPFS:", err.message);
-        throw new Error(`Failed to add to IPFS: ${err.message}`);
-      }
-  }     
 
 export default mirror;
 

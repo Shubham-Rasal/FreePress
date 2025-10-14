@@ -134,31 +134,29 @@ function PublishTab() {
       return;
     }
 
+    // Get the selected mirror's IPFS CID
+    const mirror = wpMirrors.find(m => m.id === selectedMirror);
+    if (!mirror?.ipfsCid) {
+      setError('Mirror not yet published to IPFS. Please wait for automatic IPFS sync (happens every 60 seconds).');
+      return;
+    }
+
     try {
       setPublishing(true);
       setError(null);
 
-      // Step 1: Publish mirror to IPFS
-      const publishResponse = await axios.post(`${API_URL}/api/mirror/publish/${selectedMirror}`);
-      
-      if (!publishResponse.data.success) {
-        throw new Error('Failed to publish mirror to IPFS');
-      }
-
-      const siteCid = publishResponse.data.cid;
-      
-      // Step 2: Sign manifest
+      // Sign manifest with the automatically published IPFS CID
       const signResponse = await axios.post(`${API_URL}/api/sign-manifest`, {
-        site_cid: siteCid,
+        site_cid: mirror.ipfsCid,
       });
 
       setPublishResult({
-        site_cid: siteCid,
+        site_cid: mirror.ipfsCid,
         manifest_cid: signResponse.data.manifest_cid,
         onion_url: signResponse.data.onion_url,
       });
       
-      // Refresh mirrors to show updated IPFS CID
+      // Refresh mirrors to show updated status
       await fetchWordPressMirrors();
     } catch (err: any) {
       console.error('Failed to publish:', err);
@@ -314,9 +312,9 @@ function PublishTab() {
 
       {/* Publishing Section */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-[#37322F] mb-4 font-sans">Step 3: Publish to IPFS</h3>
+        <h3 className="text-lg font-semibold text-[#37322F] mb-4 font-sans">Step 3: Sign & Announce</h3>
         <p className="text-sm text-[#605A57] mb-4">
-          Publish your mirrored WordPress site to IPFS and create a signed manifest. Your content will be announced to the discovery network.
+          Your mirror is automatically published to IPFS every 60 seconds. Create a signed manifest and announce your content to the discovery network.
         </p>
         
         {!selectedMirror && wpMirrors.length === 0 && (
@@ -339,10 +337,10 @@ function PublishTab() {
           {publishing ? (
             <span className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Publishing...
+              Signing & Announcing...
             </span>
           ) : (
-            'Publish to IPFS'
+            'Sign & Announce'
           )}
         </button>
       </div>
@@ -358,7 +356,7 @@ function PublishTab() {
       {publishResult && (
         <div className="p-6 bg-green-50 border border-green-200 rounded-lg">
           <h3 className="text-lg font-semibold text-green-900 mb-4 font-sans">
-            ✓ Published Successfully!
+            ✓ Signed & Announced Successfully!
           </h3>
           
           <div className="space-y-4">
@@ -438,11 +436,11 @@ function PublishTab() {
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">2.</span>
-            <span>You generate an Ed25519 keypair for signing your publications</span>
+            <span>The static files are automatically added to IPFS and pinned (synced every 60 seconds)</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">3.</span>
-            <span>The static files are added to IPFS and pinned locally</span>
+            <span>You generate an Ed25519 keypair for signing your publications</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">4.</span>
