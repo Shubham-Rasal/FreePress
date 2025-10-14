@@ -74,51 +74,6 @@ function MirrorTab() {
     }
   };
 
-  // Start WordPress mirror
-  const startWordPressMirror = async () => {
-    try {
-      setActionLoading('wp-mirror-start');
-      const response = await axios.post(`${BACKEND_API_URL}/api/mirror/start`);
-      
-      if (response.data.success) {
-        const jobId = response.data.jobId;
-        
-        // Poll job status
-        pollJobStatus(jobId);
-      }
-    } catch (err: any) {
-      console.error('Failed to start mirror:', err);
-      setWpError(err.response?.data?.message || err.message || 'Failed to start mirror');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  // Poll job status
-  const pollJobStatus = async (jobId: string) => {
-    const interval = setInterval(async () => {
-      try {
-        const response = await axios.get(`${BACKEND_API_URL}/api/mirror/status/${jobId}`);
-        const job = response.data;
-        setCurrentJob(job);
-
-        if (job.status === 'completed') {
-          clearInterval(interval);
-          setCurrentJob(null);
-          // Refresh the list
-          fetchWordPressMirrors();
-        } else if (job.status === 'failed') {
-          clearInterval(interval);
-          setWpError(job.error || 'Mirror job failed');
-          setCurrentJob(null);
-        }
-      } catch (err) {
-        console.error('Failed to poll job status:', err);
-        clearInterval(interval);
-        setCurrentJob(null);
-      }
-    }, 2000);
-  };
 
   
 
@@ -126,13 +81,15 @@ function MirrorTab() {
     try {
       setIpfsLoading(true);
       
-      // Step 1: Get MFS root stat to get the directory CID
+      // Step 1: Get MFS /site directory stat to get the directory CID
       const statResponse = await axios.post(
-        `${IPFS_API_URL}/api/v0/files/stat?arg=/`,
+        `${IPFS_API_URL}/api/v0/files/stat?arg=/site`,
         null,
+
         {
           headers: {
-            'Accept': '*/*'
+            'Accept': '*/*',
+            'Origin': 'http://localhost:5173'
           }
         }
       );
@@ -178,7 +135,15 @@ function MirrorTab() {
       setIpfsError(null);
     } catch (err: any) {
       console.error('Failed to fetch IPFS files:', err);
-      setIpfsError(err.response?.data?.Message || err.message || 'Failed to connect to IPFS node');
+      
+      // Handle case where /site directory doesn't exist yet
+      if (err.response?.data?.Message?.includes('file does not exist') || 
+          err.response?.data?.Message?.includes('no link named')) {
+        setIpfsFiles([]);
+        setIpfsError(null); // Not an error, just empty directory
+      } else {
+        setIpfsError(err.response?.data?.Message || err.message || 'Failed to connect to IPFS node');
+      }
     } finally {
       setIpfsLoading(false);
     }
@@ -350,9 +315,9 @@ function MirrorTab() {
           </div>
         ) : ipfsFiles.length === 0 ? (
           <div className="text-center py-8 px-6 bg-[#F7F5F3] rounded-lg">
-            <p className="text-[#605A57] text-sm">No files found in IPFS MFS root directory</p>
+            <p className="text-[#605A57] text-sm">No files found in IPFS MFS /site directory</p>
             <p className="text-xs text-[#828387] mt-2">
-              Add content using: <code className="bg-white px-2 py-1 rounded">ipfs files cp /ipfs/[CID] /filename</code>
+              The mirrored WordPress site will appear here automatically (synced every 60 seconds)
             </p>
           </div>
         ) : (
