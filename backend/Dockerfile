@@ -17,8 +17,14 @@ COPY . .
 # Build TypeScript
 RUN pnpm build
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget
+# Install wget and curl for mirroring and healthcheck
+RUN apk add --no-cache wget curl
+
+# Create static_site directory with proper permissions
+RUN mkdir -p /static_site && chmod 777 /static_site
+
+# Create keys directory for keypair storage
+RUN mkdir -p /app/keys && chmod 700 /app/keys
 
 # Expose port
 EXPOSE 4000

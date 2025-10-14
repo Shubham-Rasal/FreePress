@@ -1,7 +1,20 @@
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+import mirror from './routes/mirror.js'
+import crypto from './routes/crypto.js'
 
 const app = new Hono()
+
+// Enable CORS for frontend
+app.use('/*', cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true,
+}))
+
+// Mount routes
+app.route('/api/mirror', mirror)
+app.route('/api', crypto)
 
 // Health check routes
 app.get('/health', (c) => {
@@ -39,7 +52,7 @@ app.get('/health/live', (c) => {
 })
 
 app.get('/', (c) => {
-  return c.text('Hello Hono!')
+  return c.text('FreePress Backend API - Mirror Service Active')
 })
 
 const port = parseInt(process.env.PORT || '4000', 10)
