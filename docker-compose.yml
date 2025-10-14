@@ -32,12 +32,6 @@ services:
     depends_on:
       - db
       - onionize
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
       
   # --- IPFS Node ---
   ipfs:
@@ -55,7 +49,7 @@ services:
       sleep 10 &&
       while true; do
         ipfs files rm -r /site || true;
-        ipfs add -r /site/localhost --to-files /site;
+        ipfs add -r /site/wordpress --to-files /site;
         echo 'Synced to MFS at' $(date);
         sleep 60;
       done"
@@ -87,6 +81,7 @@ services:
   # --- Backend API ---
   backend:
     build: ./backend
+    network_mode: host
     container_name: freepress_backend
     ports:
       - "4000:4000"
@@ -96,11 +91,14 @@ services:
     volumes:
       - ./backend:/app
       - static_site:/static_site
+      - onion_services:/var/lib/tor/onion_services:ro
       - /app/node_modules
+      - /app/dist
       - /app/keys
     depends_on:
       - wordpress
       - ipfs
+      - onionize
     
     restart: unless-stopped
   
