@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import axios from 'axios';
-import StatusTab from '../components/StatusTab';
 import PublishTab from '../components/PublishTab';
 import MirrorTab from '../components/MirrorTab';
 import SettingsTab from '../components/SettingsTab';
@@ -50,7 +49,6 @@ function Dashboard() {
   const tabs = [
     { id: 'publish', label: 'Publish', icon: '📝' },
     { id: 'mirror', label: 'Mirror', icon: '🪞' },
-    { id: 'status', label: 'Status', icon: '📊' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ] as const;
 
@@ -135,7 +133,6 @@ function Dashboard() {
               <div className="w-full max-w-[960px] lg:w-[960px] bg-white shadow-[0px_0px_0px_0.9056603908538818px_rgba(0,0,0,0.08)] rounded-[9.06px] overflow-hidden">
                 {activeTab === 'publish' && <PublishTab />}
                 {activeTab === 'mirror' && <MirrorTab />}
-                {activeTab === 'status' && <StatusTab status={status} loading={loading} error={error} />}
                 {activeTab === 'settings' && <SettingsTab />}
               </div>
             </div>

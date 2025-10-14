@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const IPFS_API_URL = 'http://localhost:5001';
+const BACKEND_API_URL = 'http://localhost:4000';
 
 interface MirroredContent {
   cid: string;
@@ -19,20 +20,127 @@ interface IPFSFileLink {
   Type: number;
 }
 
+interface WordPressMirror {
+  id: string;
+  name: string;
+  path: string;
+  createdAt: number;
+  size: number;
+  fileCount?: number;
+  ipfsCid?: string;
+  isPinned?: boolean;
+}
+
+interface MirrorJob {
+  id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  startedAt: number;
+  completedAt?: number;
+  error?: string;
+}
+
 function MirrorTab() {
   const [mirrors, setMirrors] = useState<MirroredContent[]>([]);
   const [ipfsFiles, setIpfsFiles] = useState<IPFSFileLink[]>([]);
+  const [wpMirrors, setWpMirrors] = useState<WordPressMirror[]>([]);
+  const [currentJob, setCurrentJob] = useState<MirrorJob | null>(null);
   const [loading, setLoading] = useState(true);
   const [ipfsLoading, setIpfsLoading] = useState(true);
+  const [wpLoading, setWpLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ipfsError, setIpfsError] = useState<string | null>(null);
+  const [wpError, setWpError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchIPFSFiles();
+    fetchWordPressMirrors();
   }, []);
 
 
+
+  // Fetch WordPress mirrors from backend
+  const fetchWordPressMirrors = async () => {
+    try {
+      setWpLoading(true);
+      const response = await axios.get(`${BACKEND_API_URL}/api/mirror/sites`);
+      setWpMirrors(response.data.sites || []);
+      setWpError(null);
+    } catch (err: any) {
+      console.error('Failed to fetch WordPress mirrors:', err);
+      setWpError(err.response?.data?.message || err.message || 'Failed to connect to backend');
+    } finally {
+      setWpLoading(false);
+    }
+  };
+
+  // Start WordPress mirror
+  const startWordPressMirror = async () => {
+    try {
+      setActionLoading('wp-mirror-start');
+      const response = await axios.post(`${BACKEND_API_URL}/api/mirror/start`);
+      
+      if (response.data.success) {
+        const jobId = response.data.jobId;
+        
+        // Poll job status
+        pollJobStatus(jobId);
+      }
+    } catch (err: any) {
+      console.error('Failed to start mirror:', err);
+      setWpError(err.response?.data?.message || err.message || 'Failed to start mirror');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Poll job status
+  const pollJobStatus = async (jobId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(`${BACKEND_API_URL}/api/mirror/status/${jobId}`);
+        const job = response.data;
+        setCurrentJob(job);
+
+        if (job.status === 'completed') {
+          clearInterval(interval);
+          setCurrentJob(null);
+          // Refresh the list
+          fetchWordPressMirrors();
+        } else if (job.status === 'failed') {
+          clearInterval(interval);
+          setWpError(job.error || 'Mirror job failed');
+          setCurrentJob(null);
+        }
+      } catch (err) {
+        console.error('Failed to poll job status:', err);
+        clearInterval(interval);
+        setCurrentJob(null);
+      }
+    }, 2000);
+  };
+
+  
+
+  // Delete WordPress mirror
+  const deleteWordPressMirror = async (siteId: string) => {
+    if (!confirm('Are you sure you want to delete this mirrored site?')) {
+      return;
+    }
+
+    try {
+      setActionLoading(siteId);
+      await axios.delete(`${BACKEND_API_URL}/api/mirror/sites/${siteId}`);
+      
+      // Refresh the list
+      fetchWordPressMirrors();
+    } catch (err: any) {
+      console.error('Failed to delete mirror:', err);
+      setWpError(err.response?.data?.message || err.message || 'Failed to delete mirror');
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const fetchIPFSFiles = async () => {
     try {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
@@ -9,12 +9,107 @@ interface PublishResult {
   onion_url?: string;
 }
 
+interface WordPressMirror {
+  id: string;
+  name: string;
+  path: string;
+  createdAt: number;
+  size: number;
+  fileCount?: number;
+  ipfsCid?: string;
+  isPinned?: boolean;
+}
+
+interface MirrorJob {
+  id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  startedAt: number;
+  completedAt?: number;
+  error?: string;
+}
+
 function PublishTab() {
   const [publishing, setPublishing] = useState(false);
   const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasKeypair, setHasKeypair] = useState(false);
   const [publicKey, setPublicKey] = useState<string | null>(null);
+  
+  // WordPress Mirror state
+  const [wpMirrors, setWpMirrors] = useState<WordPressMirror[]>([]);
+  const [selectedMirror, setSelectedMirror] = useState<string | null>(null);
+  const [currentJob, setCurrentJob] = useState<MirrorJob | null>(null);
+  const [mirrorLoading, setMirrorLoading] = useState(false);
+  const [mirrorError, setMirrorError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchWordPressMirrors();
+  }, []);
+
+  // Fetch WordPress mirrors from backend
+  const fetchWordPressMirrors = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/mirror/sites`);
+      setWpMirrors(response.data.sites || []);
+      
+      // Auto-select the most recent mirror if available
+      if (response.data.sites && response.data.sites.length > 0) {
+        setSelectedMirror(response.data.sites[0].id);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch WordPress mirrors:', err);
+      // Don't set error here, mirrors might not exist yet
+    }
+  };
+
+  // Start WordPress mirror
+  const startWordPressMirror = async () => {
+    try {
+      setMirrorLoading(true);
+      setMirrorError(null);
+      const response = await axios.post(`${API_URL}/api/mirror/start`);
+      
+      if (response.data.success) {
+        const jobId = response.data.jobId;
+        
+        // Poll job status
+        pollJobStatus(jobId);
+      }
+    } catch (err: any) {
+      console.error('Failed to start mirror:', err);
+      setMirrorError(err.response?.data?.message || err.message || 'Failed to start mirror');
+      setMirrorLoading(false);
+    }
+  };
+
+  // Poll job status
+  const pollJobStatus = async (jobId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/mirror/status/${jobId}`);
+        const job = response.data;
+        setCurrentJob(job);
+
+        if (job.status === 'completed') {
+          clearInterval(interval);
+          setCurrentJob(null);
+          setMirrorLoading(false);
+          // Refresh the list
+          await fetchWordPressMirrors();
+        } else if (job.status === 'failed') {
+          clearInterval(interval);
+          setMirrorError(job.error || 'Mirror job failed');
+          setCurrentJob(null);
+          setMirrorLoading(false);
+        }
+      } catch (err) {
+        console.error('Failed to poll job status:', err);
+        clearInterval(interval);
+        setCurrentJob(null);
+        setMirrorLoading(false);
+      }
+    }, 2000);
+  };
 
   const handleGenerateKeypair = async () => {
     try {
@@ -34,26 +129,40 @@ function PublishTab() {
       return;
     }
 
+    if (!selectedMirror) {
+      setError('Please create a WordPress mirror first');
+      return;
+    }
+
     try {
       setPublishing(true);
       setError(null);
 
-      // Step 1: Export and add to IPFS
-      const exportResponse = await axios.post(`${API_URL}/api/publish`);
+      // Step 1: Publish mirror to IPFS
+      const publishResponse = await axios.post(`${API_URL}/api/mirror/publish/${selectedMirror}`);
+      
+      if (!publishResponse.data.success) {
+        throw new Error('Failed to publish mirror to IPFS');
+      }
+
+      const siteCid = publishResponse.data.cid;
       
       // Step 2: Sign manifest
       const signResponse = await axios.post(`${API_URL}/api/sign-manifest`, {
-        site_cid: exportResponse.data.site_cid,
+        site_cid: siteCid,
       });
 
       setPublishResult({
-        site_cid: exportResponse.data.site_cid,
+        site_cid: siteCid,
         manifest_cid: signResponse.data.manifest_cid,
-        onion_url: exportResponse.data.onion_url,
+        onion_url: signResponse.data.onion_url,
       });
+      
+      // Refresh mirrors to show updated IPFS CID
+      await fetchWordPressMirrors();
     } catch (err: any) {
       console.error('Failed to publish:', err);
-      setError(err.response?.data?.error || err.message);
+      setError(err.response?.data?.error || err.response?.data?.message || err.message);
     } finally {
       setPublishing(false);
     }
@@ -63,13 +172,112 @@ function PublishTab() {
     navigator.clipboard.writeText(text);
   };
 
+  const formatBytes = (bytes?: number) => {
+    if (!bytes) return 'Unknown';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    if (bytes === 0) return '0 Bytes';
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString();
+  };
+
   return (
     <div className="p-6 sm:p-8 md:p-10 lg:p-12">
       <h2 className="text-2xl font-semibold text-[#37322F] mb-6 font-sans">Publish Content</h2>
 
+      {/* WordPress Mirror Section */}
+      <div className="mb-8 p-6 bg-[#F7F5F3] rounded-lg border border-[#E0DEDB]">
+        <h3 className="text-lg font-semibold text-[#37322F] mb-4 font-sans">Step 1: Mirror WordPress Site</h3>
+        <p className="text-sm text-[#605A57] mb-4">
+          First, create a static mirror of your WordPress site. This will download all pages and assets.
+        </p>
+
+        {mirrorError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-800">{mirrorError}</p>
+          </div>
+        )}
+
+        {currentJob && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <div>
+                <p className="text-sm font-medium text-blue-900">
+                  Mirroring in progress...
+                </p>
+                <p className="text-xs text-blue-700">
+                  Status: {currentJob.status}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
+          <button
+            onClick={startWordPressMirror}
+            disabled={mirrorLoading}
+            className={`px-6 py-3 rounded-full font-medium text-sm transition-colors ${
+              mirrorLoading
+                ? 'bg-[#E0DEDB] text-[#828387] cursor-not-allowed'
+                : 'bg-[#37322F] text-white hover:bg-[#49423D]'
+            }`}
+          >
+            {mirrorLoading ? 'Mirroring...' : 'Create New Mirror'}
+          </button>
+
+          {wpMirrors.length > 0 && (
+            <div className="flex-1">
+              <label className="block text-xs text-[#828387] mb-2">
+                Or select existing mirror:
+              </label>
+              <select
+                value={selectedMirror || ''}
+                onChange={(e) => setSelectedMirror(e.target.value)}
+                className="w-full px-3 py-2 border border-[#E0DEDB] rounded-md text-sm bg-white"
+              >
+                {wpMirrors.map((mirror) => (
+                  <option key={mirror.id} value={mirror.id}>
+                    {mirror.name} - {formatBytes(mirror.size)} - {formatDate(mirror.createdAt)}
+                    {mirror.ipfsCid ? ' ✓ Published' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        {wpMirrors.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-[#E0DEDB]">
+            <p className="text-xs text-[#828387] mb-2">Available Mirrors:</p>
+            <div className="space-y-2">
+              {wpMirrors.slice(0, 3).map((mirror) => (
+                <div key={mirror.id} className="flex items-center justify-between p-2 bg-white rounded border border-[#E0DEDB]">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-[#37322F]">{mirror.name}</p>
+                    <p className="text-xs text-[#828387]">
+                      {formatBytes(mirror.size)} • {mirror.fileCount || 0} files • {formatDate(mirror.createdAt)}
+                    </p>
+                  </div>
+                  {mirror.ipfsCid && (
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      Published
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Keypair Section */}
       <div className="mb-8 p-6 bg-[#F7F5F3] rounded-lg border border-[#E0DEDB]">
-        <h3 className="text-lg font-semibold text-[#37322F] mb-4 font-sans">Identity & Keys</h3>
+        <h3 className="text-lg font-semibold text-[#37322F] mb-4 font-sans">Step 2: Identity & Keys</h3>
         
         {!hasKeypair && !publicKey ? (
           <div>
@@ -106,16 +314,24 @@ function PublishTab() {
 
       {/* Publishing Section */}
       <div className="mb-8">
-        <h3 className="text-lg font-semibold text-[#37322F] mb-4 font-sans">Publish to IPFS</h3>
+        <h3 className="text-lg font-semibold text-[#37322F] mb-4 font-sans">Step 3: Publish to IPFS</h3>
         <p className="text-sm text-[#605A57] mb-4">
-          Export your WordPress content, add it to IPFS, and create a signed manifest. Your content will be announced to the discovery network.
+          Publish your mirrored WordPress site to IPFS and create a signed manifest. Your content will be announced to the discovery network.
         </p>
         
+        {!selectedMirror && wpMirrors.length === 0 && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              ⚠️ Please create a WordPress mirror first (Step 1)
+            </p>
+          </div>
+        )}
+
         <button
           onClick={handlePublish}
-          disabled={publishing || (!hasKeypair && !publicKey)}
+          disabled={publishing || (!hasKeypair && !publicKey) || !selectedMirror}
           className={`px-6 py-3 rounded-full font-medium text-sm transition-colors ${
-            publishing || (!hasKeypair && !publicKey)
+            publishing || (!hasKeypair && !publicKey) || !selectedMirror
               ? 'bg-[#E0DEDB] text-[#828387] cursor-not-allowed'
               : 'bg-[#37322F] text-white hover:bg-[#49423D]'
           }`}
@@ -126,7 +342,7 @@ function PublishTab() {
               Publishing...
             </span>
           ) : (
-            'Publish Now'
+            'Publish to IPFS'
           )}
         </button>
       </div>
@@ -218,22 +434,26 @@ function PublishTab() {
         <ol className="space-y-2 text-sm text-[#605A57]">
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">1.</span>
-            <span>Your WordPress site is exported as static files</span>
+            <span>Your WordPress site is mirrored as static files using wget</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">2.</span>
-            <span>Files are added to IPFS and pinned locally</span>
+            <span>You generate an Ed25519 keypair for signing your publications</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">3.</span>
-            <span>A manifest.json is created with metadata and signed with your private key</span>
+            <span>The static files are added to IPFS and pinned locally</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">4.</span>
-            <span>The manifest is announced to the discovery network via libp2p pubsub</span>
+            <span>A manifest.json is created with metadata and signed with your private key</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-semibold text-[#37322F]">5.</span>
+            <span>The manifest is announced to the discovery network via libp2p pubsub</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-semibold text-[#37322F]">6.</span>
             <span>Discovery nodes fetch, verify, and pin your content for resilience</span>
           </li>
         </ol>
