@@ -122,26 +122,6 @@ function MirrorTab() {
 
   
 
-  // Delete WordPress mirror
-  const deleteWordPressMirror = async (siteId: string) => {
-    if (!confirm('Are you sure you want to delete this mirrored site?')) {
-      return;
-    }
-
-    try {
-      setActionLoading(siteId);
-      await axios.delete(`${BACKEND_API_URL}/api/mirror/sites/${siteId}`);
-      
-      // Refresh the list
-      fetchWordPressMirrors();
-    } catch (err: any) {
-      console.error('Failed to delete mirror:', err);
-      setWpError(err.response?.data?.message || err.message || 'Failed to delete mirror');
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const fetchIPFSFiles = async () => {
     try {
       setIpfsLoading(true);
