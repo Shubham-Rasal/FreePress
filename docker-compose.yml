@@ -43,6 +43,9 @@ services:
     volumes:
       - static_site:/site
       - ipfs_data:/data/ipfs
+      - onion_services:/var/lib/tor/onion_services:ro
+    depends_on:
+      - onionize
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "ipfs init || true &&
@@ -52,9 +55,20 @@ services:
       ipfs daemon & 
       sleep 10 &&
       while true; do
-        ipfs files rm -r /site || true;
-        ipfs add -r /site/wordpress --to-files /site;
-        echo 'Synced to MFS at' $(date);
+        ONION_FULL=$(cat /var/lib/tor/onion_services/wordpress/hostname 2>/dev/null | tr -d '\\n' || echo '');
+        if [ -n \"$ONION_FULL\" ]; then
+          ONION_ADDR=$(echo $ONION_FULL | sed 's/.onion//');
+          MIRROR_DIR=$(find /site/wordpress -maxdepth 1 -type d -name \"*$ONION_ADDR*\" 2>/dev/null | head -1);
+          if [ -n \"$MIRROR_DIR\" ] && [ -d \"$MIRROR_DIR\" ]; then
+            ipfs files rm -r /site/$ONION_ADDR 2>/dev/null || true;
+            ipfs add -r $MIRROR_DIR --to-files /site/$ONION_ADDR;
+            echo \"[$(date)] Synced $MIRROR_DIR to MFS at /site/$ONION_ADDR\";
+          else
+            echo \"[$(date)] No mirror directory found for $ONION_ADDR\";
+          fi;
+        else
+          echo \"[$(date)] Waiting for onion address...\";
+        fi;
         sleep 60;
       done"
     restart: unless-stopped
