@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import PublishTab from './components/PublishTab';
-import ExploreTab from './components/ExploreTab';
 import MirrorTab from './components/MirrorTab';
 import SettingsTab from './components/SettingsTab';
 
@@ -116,7 +115,6 @@ function Dashboard() {
               {/* Tab Content */}
               <div className="w-full max-w-[960px] lg:w-[960px] bg-white shadow-[0px_0px_0px_0.9056603908538818px_rgba(0,0,0,0.08)] rounded-[9.06px] overflow-hidden">
                 {activeTab === 'publish' && <PublishTab />}
-                {activeTab === 'explore' && <ExploreTab />}
                 {activeTab === 'mirror' && <MirrorTab />}
                 {activeTab === 'settings' && <SettingsTab />}
               </div>

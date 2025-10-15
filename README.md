@@ -52,34 +52,47 @@ That's it! Your FreePress node is now running.
 
 ## 🧩 Architecture
 
+**📊 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed diagrams and data flows.**
+
 ```
 ┌─────────────────────────────────────────┐
-│         FreePress Dashboard             │
-│         (React - Port 3000)             │
+│     React Dashboard (Port 5173)         │
+│  ┌──────────┬──────────┬─────────────┐  │
+│  │ Publish  │ Explore  │   Mirror    │  │
+│  └──────────┴──────────┴─────────────┘  │
 └────────────┬────────────────────────────┘
              │
 ┌────────────┴────────────────────────────┐
-│       Backend API (Express)             │
-│         (Port 4000)                     │
+│     Backend API (Hono - Port 4000)      │
+│  • Signing  • Mirroring  • Keypairs    │
 └──┬─────────┬──────────┬─────────────────┘
    │         │          │
-┌──▼──┐  ┌──▼──┐   ┌──▼──────┐
-│ Tor │  │IPFS │   │WordPress│
-│     │  │     │   │ (8080)  │
-└─────┘  └─────┘   └─────────┘
+┌──▼──┐  ┌──▼──────┐  ┌▼─────────┐
+│ Tor │  │  IPFS   │  │WordPress │
+│ .   │  │ + Cluster│  │ + MySQL  │
+│onion│  │         │  │  (80)    │
+└─────┘  └────┬────┘  └──────────┘
+              │
+         ┌────▼────┐
+         │  Waku   │
+         │Discovery│
+         └─────────┘
 ```
 
 ### Services
 
 | Service | Port | Description |
 |---------|------|-------------|
-| **Dashboard** | 3000 | React frontend UI |
-| **Backend API** | 4000 | Express REST API |
-| **WordPress** | 8080 | CMS for content creation |
+| **Dashboard** | 5173 | React frontend UI (Vite) |
+| **Landing Site** | 3000 | Next.js marketing site |
+| **Backend API** | 4000 | Node.js REST API (Hono) |
+| **WordPress** | 80 | CMS for content creation |
 | **IPFS Gateway** | 8081 | IPFS HTTP gateway |
 | **IPFS API** | 5001 | IPFS RPC API |
+| **IPFS Cluster** | 9094 | IPFS Cluster REST API |
 | **MySQL** | - | WordPress database (internal) |
 | **Tor** | - | Onion service (internal) |
+| **Waku** | - | P2P discovery (client-side) |
 
 ## 📖 Usage
 

@@ -191,7 +191,7 @@ function LandingPage() {
                         </div>
                         <div className="flex flex-col gap-2 sm:items-end">
                           <span className="text-sm text-[#828387]">
-                            {new Date(manifest.timestamp * 1000).toLocaleDateString()}
+                            {new Date(manifest.timestamp).toLocaleDateString()}
                           </span>
                           {manifest.mirror_count !== undefined && (
                             <span className="text-sm text-[#605A57] bg-[#F7F5F3] px-4 py-1.5 rounded-full border border-[#E0DEDB]">
