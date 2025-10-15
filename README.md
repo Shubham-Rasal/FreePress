@@ -55,6 +55,9 @@ That's it! Your FreePress node is now running.
 
 ## 🧩 Architecture
 
+<img width="1814" height="619" alt="image" src="https://github.com/user-attachments/assets/d7a34e41-72db-4375-bcca-16c6504b8d18" />
+
+
 ### System Overview
 
 ```mermaid
