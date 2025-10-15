@@ -3,9 +3,6 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import SmartSimpleBrilliant from "../components/smart-simple-brilliant"
-import EffortlessIntegration from "../components/effortless-integration-updated"
-import NumbersThatSpeak from "../components/numbers-that-speak"
 import FooterSection from "../components/footer-section"
 
 // Reusable Badge Component
@@ -58,19 +55,6 @@ export default function LandingPage() {
     setProgress(0)
   }
 
-  const getDashboardContent = () => {
-    switch (activeCard) {
-      case 0:
-        return <div className="text-[#828387] text-sm">Customer Subscription Status and Details</div>
-      case 1:
-        return <div className="text-[#828387] text-sm">Analytics Dashboard - Real-time Insights</div>
-      case 2:
-        return <div className="text-[#828387] text-sm">Data Visualization - Charts and Metrics</div>
-      default:
-        return <div className="text-[#828387] text-sm">Customer Subscription Status and Details</div>
-    }
-  }
-
   return (
     <div className="w-full min-h-screen relative bg-[#F7F5F3] overflow-x-hidden flex flex-col justify-start items-center">
       <div className="relative flex flex-col justify-start items-center w-full">
@@ -95,29 +79,34 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="pl-3 sm:pl-4 md:pl-5 lg:pl-5 flex justify-start items-start hidden sm:flex flex-row gap-2 sm:gap-3 md:gap-4 lg:gap-4">
-                    <div className="flex justify-start items-center">
+                    <a href="#how-it-works" className="flex justify-start items-center hover:text-[#37322F] transition-colors">
                       <div className="flex flex-col justify-center text-[rgba(49,45,43,0.80)] text-xs md:text-[13px] font-medium leading-[14px] font-sans">
                         How it works
                       </div>
-                    </div>
-                    <div className="flex justify-start items-center">
+                    </a>
+                    <a href="#under-the-hood" className="flex justify-start items-center hover:text-[#37322F] transition-colors">
                       <div className="flex flex-col justify-center text-[rgba(49,45,43,0.80)] text-xs md:text-[13px] font-medium leading-[14px] font-sans">
                         Under the hood
                       </div>
-                    </div>
-                    <div className="flex justify-start items-center">
+                    </a>
+                    <a href="https://github.com/Shubham-Rasal/FreePress#readme" target="_blank" rel="noopener noreferrer" className="flex justify-start items-center hover:text-[#37322F] transition-colors">
                       <div className="flex flex-col justify-center text-[rgba(49,45,43,0.80)] text-xs md:text-[13px] font-medium leading-[14px] font-sans">
                         Docs
                       </div>
-                    </div>
+                    </a>
                   </div>
                 </div>
                 <div className="h-6 sm:h-7 md:h-8 flex justify-start items-start gap-2 sm:gap-3">
-                  <div className="px-2 sm:px-3 md:px-[14px] py-1 sm:py-[6px] bg-white shadow-[0px_1px_2px_rgba(55,50,47,0.12)] overflow-hidden rounded-full flex justify-center items-center">
+                  <a 
+                    href="https://github.com/Shubham-Rasal/FreePress" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-2 sm:px-3 md:px-[14px] py-1 sm:py-[6px] bg-white shadow-[0px_1px_2px_rgba(55,50,47,0.12)] overflow-hidden rounded-full flex justify-center items-center hover:bg-[#F7F5F3] transition-colors"
+                  >
                     <div className="flex flex-col justify-center text-[#37322F] text-xs md:text-[13px] font-medium leading-5 font-sans">
                       GitHub →
                     </div>
-                  </div>
+                  </a>
                 </div>
               </div>
             </div>
@@ -130,20 +119,24 @@ export default function LandingPage() {
                     FreePress — Publish Without Permission
                   </div>
                   <div className="w-full max-w-[506.08px] lg:w-[506.08px] text-center flex justify-center flex-col text-[rgba(55,50,47,0.80)] sm:text-lg md:text-xl leading-[1.4] sm:leading-[1.45] md:leading-[1.5] lg:leading-7 font-sans px-2 sm:px-4 md:px-0 lg:text-lg font-medium text-sm">
-                    Private. Censorship-proof. Autonomous. Run your own publication on your own machine — discover
-                    others, share knowledge, and stay resilient without complexity.
+                    Censorship-resistant publishing powered by WordPress, Tor, IPFS, and Waku. Mirror your site, sign with cryptography, and broadcast to a decentralized discovery network — all from your own machine.
                   </div>
                 </div>
               </div>
 
               <div className="w-full max-w-[497px] lg:w-[497px] flex flex-col justify-center items-center gap-6 sm:gap-8 md:gap-10 lg:gap-12 relative z-10 mt-6 sm:mt-8 md:mt-10 lg:mt-12">
                 <div className="backdrop-blur-[8.25px] flex justify-start items-center gap-4">
-                  <div className="h-10 sm:h-11 md:h-12 px-6 sm:px-8 md:px-10 lg:px-12 py-2 sm:py-[6px] relative bg-[#37322F] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] overflow-hidden rounded-full flex justify-center items-center">
+                  <a 
+                    href="https://github.com/Shubham-Rasal/FreePress" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="h-10 sm:h-11 md:h-12 px-6 sm:px-8 md:px-10 lg:px-12 py-2 sm:py-[6px] relative bg-[#37322F] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] overflow-hidden rounded-full flex justify-center items-center hover:bg-[#49423D] transition-colors"
+                  >
                     <div className="w-20 sm:w-24 md:w-28 lg:w-44 h-[41px] absolute left-0 top-[-0.5px] bg-gradient-to-b from-[rgba(255,255,255,0)] to-[rgba(0,0,0,0.10)] mix-blend-multiply"></div>
                     <div className="flex flex-col justify-center text-white text-sm sm:text-base md:text-[15px] font-medium leading-5 font-sans">
-                      Launch FreePress
+                      Get Started on GitHub
                     </div>
-                  </div>
+                  </a>
                 </div>
               </div>
 
@@ -158,55 +151,9 @@ export default function LandingPage() {
                 />
               </div>
 
+              {/* Architecture Diagram */}
               <div className="w-full max-w-[960px] lg:w-[960px] pt-2 sm:pt-4 pb-6 sm:pb-8 md:pb-10 px-2 sm:px-4 md:px-6 lg:px-11 flex flex-col justify-center items-center gap-2 relative z-5 my-8 sm:my-12 md:my-16 lg:my-16 mb-0 lg:pb-0">
-                <div className="w-full max-w-[960px] lg:w-[960px] h-[200px] sm:h-[280px] md:h-[450px] lg:h-[695.55px] bg-white shadow-[0px_0px_0px_0.9056603908538818px_rgba(0,0,0,0.08)] overflow-hidden rounded-[6px] sm:rounded-[8px] lg:rounded-[9.06px] flex flex-col justify-start items-start">
-                  {/* Dashboard Content */}
-                  <div className="self-stretch flex-1 flex justify-start items-start">
-                    {/* Main Content */}
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="relative w-full h-full overflow-hidden">
-                        {/* Product Image 1 - Plan your schedules */}
-                        <div
-                          className={`absolute inset-0 transition-all duration-500 ease-in-out ${
-                            activeCard === 0 ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-95 blur-sm"
-                          }`}
-                        >
-                          <img
-                            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/dsadsadsa.jpg-xTHS4hGwCWp2H5bTj8np6DXZUyrxX7.jpeg"
-                            alt="Schedules Dashboard - Customer Subscription Management"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        {/* Product Image 2 - Data to insights */}
-                        <div
-                          className={`absolute inset-0 transition-all duration-500 ease-in-out ${
-                            activeCard === 1 ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-95 blur-sm"
-                          }`}
-                        >
-                          <img
-                            src="/analytics-dashboard-with-charts-graphs-and-data-vi.jpg"
-                            alt="Analytics Dashboard"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-
-                        {/* Product Image 3 - Data visualization */}
-                        <div
-                          className={`absolute inset-0 transition-all duration-500 ease-in-out ${
-                            activeCard === 2 ? "opacity-100 scale-100 blur-0" : "opacity-0 scale-95 blur-sm"
-                          }`}
-                        >
-                          <img
-                            src="/data-visualization-dashboard-with-interactive-char.jpg"
-                            alt="Data Visualization Dashboard"
-                            className="w-full h-full object-contain" // Changed from object-cover to object-contain to preserve landscape aspect ratio
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                
               </div>
 
               <div className="self-stretch border-t border-[#E0DEDB] border-b border-[#E0DEDB] flex justify-center items-start">
@@ -224,22 +171,22 @@ export default function LandingPage() {
 
                 <div className="flex-1 px-0 sm:px-2 md:px-0 flex flex-col md:flex-row justify-center items-stretch gap-0">
                   <FeatureCard
-                    title="Runs locally"
-                    description="Your site lives on your computer, not someone else’s cloud. Choose WordPress or Ghost in a containerized stack."
-                    isActive={activeCard === 0}
+                    title="WordPress + Tor"
+                    description="Run WordPress locally in Docker. Mirror your site via Tor onion service for anonymous publishing."
+                    isActive={activeCard === 4}
                     progress={activeCard === 0 ? progress : 0}
                     onClick={() => handleCardClick(0)}
                   />
                   <FeatureCard
-                    title="Private by design"
-                    description="No accounts. No tracking. No central servers. Serve content over Tor or Waku with anonymous discovery."
+                    title="IPFS Publishing"
+                    description="Static site mirrors are automatically synced to IPFS every 60 seconds for permanent, distributed storage."
                     isActive={activeCard === 1}
                     progress={activeCard === 1 ? progress : 0}
                     onClick={() => handleCardClick(1)}
                   />
                   <FeatureCard
-                    title="Resilient network"
-                    description="IPFS + libp2p keep your content discoverable and mirrored across peers — built to withstand takedowns."
+                    title="Waku Discovery"
+                    description="Sign manifests with Ed25519 keys and broadcast to Waku network. Others discover and mirror your content."
                     isActive={activeCard === 2}
                     progress={activeCard === 2 ? progress : 0}
                     onClick={() => handleCardClick(2)}
@@ -259,145 +206,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Bento Grid Section */}
-              <div className="w-full border-b border-[rgba(55,50,47,0.12)] flex flex-col justify-center items-center">
-                {/* Header Section */}
-                <div className="self-stretch px-4 sm:px-6 md:px-8 lg:px-0 lg:max-w-[1060px] lg:w-[1060px] py-8 sm:py-12 md:py-16 border-b border-[rgba(55,50,47,0.12)] flex justify-center items-center gap-6">
-                  <div className="w-full max-w-[616px] lg:w-[616px] px-4 sm:px-6 py-4 sm:py-5 shadow-[0px_2px_4px_rgba(50,45,43,0.06)] overflow-hidden rounded-lg flex flex-col justify-start items-center gap-3 sm:gap-4 shadow-none">
-                    <Badge
-                      icon={
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <rect x="1" y="1" width="4" height="4" stroke="#37322F" strokeWidth="1" fill="none" />
-                          <rect x="7" y="1" width="4" height="4" stroke="#37322F" strokeWidth="1" fill="none" />
-                          <rect x="1" y="7" width="4" height="4" stroke="#37322F" strokeWidth="1" fill="none" />
-                          <rect x="7" y="7" width="4" height="4" stroke="#37322F" strokeWidth="1" fill="none" />
-                        </svg>
-                      }
-                      text="Bento grid"
-                    />
-                    <div className="w-full max-w-[598.06px] lg:w-[598.06px] text-center flex justify-center flex-col text-[#49423D] text-xl sm:text-2xl md:text-3xl lg:text-5xl font-semibold leading-tight md:leading-[60px] font-sans tracking-tight">
-                      Built for absolute clarity and focused work
-                    </div>
-                    <div className="self-stretch text-center text-[#605A57] text-sm sm:text-base font-normal leading-6 sm:leading-7 font-sans">
-                      Stay focused with tools that organize, connect
-                      <br />
-                      and turn information into confident decisions.
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bento Grid Content */}
-                <div className="self-stretch flex justify-center items-start">
-                  <div className="w-4 sm:w-6 md:w-8 lg:w-12 self-stretch relative overflow-hidden">
-                    {/* Left decorative pattern */}
-                    <div className="w-[120px] sm:w-[140px] md:w-[162px] left-[-40px] sm:left-[-50px] md:left-[-58px] top-[-120px] absolute flex flex-col justify-start items-start">
-                      {Array.from({ length: 200 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="self-stretch h-3 sm:h-4 rotate-[-45deg] origin-top-left outline outline-[0.5px] outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-0 border-l border-r border-[rgba(55,50,47,0.12)]">
-                    {/* Top Left - Smart. Simple. Brilliant. */}
-                    <div className="border-b border-r-0 md:border-r border-[rgba(55,50,47,0.12)] p-4 sm:p-6 md:p-8 lg:p-12 flex flex-col justify-start items-start gap-4 sm:gap-6">
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-[#37322F] text-lg sm:text-xl font-semibold leading-tight font-sans">
-                          Smart. Simple. Brilliant.
-                        </h3>
-                        <p className="text-[#605A57] text-sm md:text-base font-normal leading-relaxed font-sans">
-                          Your data is beautifully organized so you see everything clearly without the clutter.
-                        </p>
-                      </div>
-                      <div className="w-full h-[200px] sm:h-[250px] md:h-[300px] rounded-lg flex items-center justify-center overflow-hidden">
-                        <SmartSimpleBrilliant
-                          width="100%"
-                          height="100%"
-                          theme="light"
-                          className="scale-50 sm:scale-65 md:scale-75 lg:scale-90"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Top Right - Your work, in sync */}
-                    <div className="border-b border-[rgba(55,50,47,0.12)] p-4 sm:p-6 md:p-8 lg:p-12 flex flex-col justify-start items-start gap-4 sm:gap-6">
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-[#37322F] font-semibold leading-tight font-sans text-lg sm:text-xl">
-                          Your work, in sync
-                        </h3>
-                        <p className="text-[#605A57] text-sm md:text-base font-normal leading-relaxed font-sans">
-                          Every update flows instantly across your team and keeps collaboration effortless and fast.
-                        </p>
-                      </div>
-                     
-                    </div>
-
-                    {/* Bottom Left - Effortless integration */}
-                    <div className="border-r-0 md:border-r border-[rgba(55,50,47,0.12)] p-4 sm:p-6 md:p-8 lg:p-12 flex flex-col justify-start items-start gap-4 sm:gap-6 bg-transparent">
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-[#37322F] text-lg sm:text-xl font-semibold leading-tight font-sans">
-                          Effortless integration
-                        </h3>
-                        <p className="text-[#605A57] text-sm md:text-base font-normal leading-relaxed font-sans">
-                          All your favorite tools connect in one place and work together seamlessly by design.
-                        </p>
-                      </div>
-                      <div className="w-full h-[200px] sm:h-[250px] md:h-[300px] rounded-lg flex overflow-hidden justify-center items-center relative bg-transparent">
-                        <div className="w-full h-full flex items-center justify-center bg-transparent">
-                          <EffortlessIntegration width={400} height={250} className="max-w-full max-h-full" />
-                        </div>
-                        {/* Gradient mask for soft bottom edge */}
-                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#F7F5F3] to-transparent pointer-events-none"></div>
-                      </div>
-                    </div>
-
-                    {/* Bottom Right - Numbers that speak */}
-                    <div className="p-4 sm:p-6 md:p-8 lg:p-12 flex flex-col justify-start items-start gap-4 sm:gap-6">
-                      <div className="flex flex-col gap-2">
-                        <h3 className="text-[#37322F] text-lg sm:text-xl font-semibold leading-tight font-sans">
-                          Numbers that speak
-                        </h3>
-                        <p className="text-[#605A57] text-sm md:text-base font-normal leading-relaxed font-sans">
-                          Track growth with precision and turn raw data into confident decisions you can trust.
-                        </p>
-                      </div>
-                      <div className="w-full h-[200px] sm:h-[250px] md:h-[300px] rounded-lg flex overflow-hidden items-center justify-center relative">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <NumbersThatSpeak
-                            width="100%"
-                            height="100%"
-                            theme="light"
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                        {/* Gradient mask for soft bottom edge */}
-                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#F7F5F3] to-transparent pointer-events-none"></div>
-                        {/* Fallback content if component doesn't render */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-20 hidden">
-                          <div className="flex flex-col items-center gap-2 p-4">
-                            <div className="w-3/4 h-full bg-green-500 rounded-full"></div>
-                          </div>
-                          <div className="text-sm text-green-600">Growth Rate</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-4 sm:w-6 md:w-8 lg:w-12 self-stretch relative overflow-hidden">
-                    {/* Right decorative pattern */}
-                    <div className="w-[120px] sm:w-[140px] md:w-[162px] left-[-40px] sm:left-[-50px] md:left-[-58px] top-[-120px] absolute flex flex-col justify-start items-start">
-                      {Array.from({ length: 200 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="self-stretch h-3 sm:h-4 rotate-[-45deg] origin-top-left outline outline-[0.5px] outline-[rgba(3,7,18,0.08)] outline-offset-[-0.25px]"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               <section id="how-it-works" className="w-full border-b border-[rgba(55,50,47,0.12)] py-12 sm:py-16">
                 <div className="max-w-[1060px] mx-auto px-4 flex flex-col gap-8">
@@ -406,44 +214,56 @@ export default function LandingPage() {
                       How It Works
                     </h2>
                     <p className="mt-3 text-[#605A57] text-sm sm:text-base leading-7">
-                      Download, launch, create or import your site, publish securely, and get discovered — anonymously.
+                      Launch WordPress locally, mirror via Tor, publish to IPFS, sign with cryptography, and announce to the discovery network.
                     </p>
                   </div>
 
                   <ol className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <li className="p-5 rounded-md border border-[#E0DEDB] bg-white">
-                      <h3 className="text-[#37322F] font-semibold">1. Download & Launch</h3>
+                      <h3 className="text-[#37322F] font-semibold">1. Launch the Stack</h3>
                       <pre className="mt-3 p-4 rounded-md bg-[#F7F5F3] text-[#37322F] text-sm overflow-auto">
-                        {`curl -fsSL https://freepress.sh/install | bash
+                        {`git clone https://github.com/Shubham-Rasal/FreePress.git
+cd FreePress
 docker compose up -d`}
                       </pre>
-                      <p className="mt-3 text-[#605A57] text-sm">You now host your own publication locally.</p>
+                      <p className="mt-3 text-[#605A57] text-sm">WordPress, Tor, IPFS, and the frontend run in containers on your machine.</p>
                     </li>
                     <li className="p-5 rounded-md border border-[#E0DEDB] bg-white">
-                      <h3 className="text-[#37322F] font-semibold">2. Create or Import Your Site</h3>
+                      <h3 className="text-[#37322F] font-semibold">2. Create Content</h3>
                       <p className="mt-3 text-[#605A57] text-sm">
-                        Pick WordPress or Ghost — setup, routing, and networking are handled.
+                        Access WordPress at localhost:80, write your posts, and build your site. Everything runs locally with no accounts.
                       </p>
                     </li>
                     <li className="p-5 rounded-md border border-[#E0DEDB] bg-white">
-                      <h3 className="text-[#37322F] font-semibold">3. Publish Securely</h3>
+                      <h3 className="text-[#37322F] font-semibold">3. Mirror via Tor</h3>
                       <p className="mt-3 text-[#605A57] text-sm">
-                        Serve content over Tor or Waku; peers mirror content for resilience.
+                        Click "Create Mirror" to generate a static copy served through your Tor onion address. Automatic syncing to IPFS happens every 60 seconds.
                       </p>
                     </li>
                     <li className="p-5 rounded-md border border-[#E0DEDB] bg-white">
-                      <h3 className="text-[#37322F] font-semibold">4. Get Discovered (Anonymously)</h3>
+                      <h3 className="text-[#37322F] font-semibold">4. Sign & Announce</h3>
                       <p className="mt-3 text-[#605A57] text-sm">
-                        Broadcast a signed manifest to the decentralized index — no tracking.
+                        Generate an Ed25519 keypair, add metadata (title, description, tags), and broadcast your signed manifest to the Waku discovery network.
+                      </p>
+                    </li>
+                    <li className="p-5 rounded-md border border-[#E0DEDB] bg-white">
+                      <h3 className="text-[#37322F] font-semibold">5. Discover Others</h3>
+                      <p className="mt-3 text-[#605A57] text-sm">
+                        Browse the Explore tab to see publications announced by others. Search by tags, verify signatures, and access content via IPFS or Tor.
+                      </p>
+                    </li>
+                    <li className="p-5 rounded-md border border-[#E0DEDB] bg-white">
+                      <h3 className="text-[#37322F] font-semibold">6. Stay Resilient</h3>
+                      <p className="mt-3 text-[#605A57] text-sm">
+                        Your content is pinned on IPFS and discoverable via Waku. Even when you go offline, mirrors keep your publication accessible.
                       </p>
                     </li>
                   </ol>
 
                   <div className="p-5 rounded-md border border-[#E0DEDB] bg-white">
-                    <h3 className="text-[#37322F] font-semibold">When you go offline — your words stay online</h3>
+                    <h3 className="text-[#37322F] font-semibold">Cryptographic Verification</h3>
                     <p className="mt-3 text-[#605A57] text-sm">
-                      IPFS mirrors keep your content available. Your identity and followers persist via cryptographic
-                      keys — not accounts.
+                      Every manifest includes version, site CID, timestamp, publisher public key, and Ed25519 signature. Anyone can verify authenticity without trusting a central authority.
                     </p>
                   </div>
                 </div>
@@ -460,32 +280,49 @@ docker compose up -d`}
                         <tr className="text-[#37322F] text-sm">
                           <th className="px-4 py-3 border-b border-[#E0DEDB]">Layer</th>
                           <th className="px-4 py-3 border-b border-[#E0DEDB]">Technology</th>
+                          <th className="px-4 py-3 border-b border-[#E0DEDB]">Purpose</th>
                         </tr>
                       </thead>
                       <tbody className="text-[#605A57] text-sm">
                         <tr>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Local publishing</td>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB]">WordPress / Ghost</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">CMS</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">WordPress + MySQL</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Local content creation</td>
                         </tr>
                         <tr>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Privacy routing</td>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Tor or Waku</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Anonymity</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Tor (onionize)</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Onion service for site access</td>
                         </tr>
                         <tr>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Discovery</td>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB]">libp2p pubsub + IPFS manifests</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Mirroring</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">wget + torsocks</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Static site generation via Tor</td>
                         </tr>
                         <tr>
                           <td className="px-4 py-3 border-t border-[#E0DEDB]">Storage</td>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Local + IPFS/Filecoin</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">IPFS (Kubo + Cluster)</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Distributed content storage</td>
                         </tr>
                         <tr>
                           <td className="px-4 py-3 border-t border-[#E0DEDB]">Identity</td>
                           <td className="px-4 py-3 border-t border-[#E0DEDB]">Ed25519 keypair</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Cryptographic signing</td>
                         </tr>
                         <tr>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB] rounded-b-md">Packaging</td>
-                          <td className="px-4 py-3 border-t border-[#E0DEDB] rounded-b-md">Docker Compose + Web UI</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Discovery</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Waku (libp2p + protobuf)</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">P2P manifest announcements</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Backend</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">Node.js + Hono</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB]">API for signing and mirroring</td>
+                        </tr>
+                        <tr>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB] rounded-b-md">Frontend</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB] rounded-b-md">React + TypeScript + Vite</td>
+                          <td className="px-4 py-3 border-t border-[#E0DEDB] rounded-b-md">Dashboard UI</td>
                         </tr>
                       </tbody>
                     </table>
@@ -493,41 +330,28 @@ docker compose up -d`}
                 </div>
               </section>
 
-              <section className="w-full border-b border-[rgba(55,50,47,0.12)] py-12 sm:py-16">
-                <div className="max-w-[1060px] mx-auto px-4 text-center">
-                  <h2 className="text-[#49423D] text-2xl sm:text-3xl font-semibold">Try the Demo</h2>
-                  <p className="mt-3 text-[#605A57] text-sm sm:text-base">
-                    See how a site stays alive, even when the publisher disappears.
-                  </p>
-                  <div className="mt-6 flex items-center justify-center gap-3">
-                    <a href="#" className="px-5 py-2 rounded-full bg-[#37322F] text-white text-sm font-medium">
-                      Watch Demo
-                    </a>
-                    <a
-                      href="#"
-                      className="px-5 py-2 rounded-full bg-white border border-[#E0DEDB] text-[#37322F] text-sm font-medium"
-                    >
-                      Download Beta
-                    </a>
-                  </div>
-                </div>
-              </section>
 
               <section className="w-full border-b border-[rgba(55,50,47,0.12)] py-12 sm:py-16">
                 <div className="max-w-[900px] mx-auto px-4 text-center">
                   <blockquote className="text-[#49423D] text-lg sm:text-xl font-serif text-pretty">
-                    “The future of publishing isn’t in the cloud — it’s in our hands. Run your own press. Be your own
-                    archive. Protect your voice.”
+                    "Censorship-resistant publishing isn't about hoping platforms let you speak. It's about taking control. Run your own stack. Sign your own manifests. Join a network that can't be shut down."
                   </blockquote>
                   <div className="mt-6 flex items-center justify-center gap-3">
-                    <a href="#" className="px-5 py-2 rounded-full bg-[#37322F] text-white text-sm font-medium">
-                      Launch FreePress
+                    <a 
+                      href="https://github.com/Shubham-Rasal/FreePress" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="px-5 py-2 rounded-full bg-[#37322F] text-white text-sm font-medium hover:bg-[#49423D] transition-colors"
+                    >
+                      Get Started on GitHub
                     </a>
                     <a
-                      href="#"
-                      className="px-5 py-2 rounded-full bg-white border border-[#E0DEDB] text-[#37322F] text-sm font-medium"
+                      href="https://github.com/Shubham-Rasal/FreePress#-quick-start"
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="px-5 py-2 rounded-full bg-white border border-[#E0DEDB] text-[#37322F] text-sm font-medium hover:bg-[#F7F5F3] transition-colors"
                     >
-                      GitHub →
+                      Documentation →
                     </a>
                   </div>
                 </div>

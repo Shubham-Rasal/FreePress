@@ -88,23 +88,23 @@ function LandingPage() {
               </div>
 
               {/* Publish Controls */}
-              <div className="w-full max-w-[960px] lg:w-[960px] mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="w-full max-w-[960px] lg:w-[960px] mb-6 p-4 bg-[#F7F5F3] border border-[#E0DEDB] rounded-lg">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm text-blue-800 font-semibold mb-1">
+                    <p className="text-sm text-[#37322F] font-semibold mb-1">
                       {nodeStatus === 'simulation' ? '🧪 Simulation Mode' : '🌐 Waku Network'}
                     </p>
-                    <p className="text-xs text-blue-700">
+                    <p className="text-xs text-[#605A57]">
                       Total discovered: <strong>{manifests.length}</strong> publications
                       {nodeStatus !== 'simulation' && ` • Status: ${nodeStatus}`}
                     </p>
                   </div>
-                  <button
+                  {/* <button
                     onClick={simulatePublish}
                     className="px-6 py-3 bg-blue-600 text-white rounded-full font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm"
                   >
                     📢 {nodeStatus === 'simulation' ? 'Simulate' : 'Publish'}
-                  </button>
+                  </button> */}
                 </div>
               </div>
 

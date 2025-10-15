@@ -54,6 +54,7 @@ function ExploreTab() {
               {nodeStatus !== 'simulation' && ` • Status: ${nodeStatus}`}
             </p>
           </div>
+          
           {/* <button
             onClick={simulatePublish}
             className="px-5 py-2 bg-blue-600 text-white rounded-full font-medium text-sm hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
