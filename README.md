@@ -36,7 +36,7 @@ FreePress solves this by running **locally on your machine**, serving content ov
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/FreePress.git
+git clone https://github.com/Shubham-Rasal/FreePress.git
 cd FreePress
 ```
 
@@ -46,37 +46,129 @@ docker compose up -d
 ```
 
 3. **Access the dashboard**
-Open your browser to: **http://localhost:3000**
+Open your browser to:
+- **Dashboard**: http://localhost:5173
+- **Landing Site**: http://localhost:3000
+- **WordPress**: http://localhost:80
 
 That's it! Your FreePress node is now running.
 
 ## 🧩 Architecture
 
-**📊 See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed diagrams and data flows.**
+### System Overview
 
+```mermaid
+graph TB
+    subgraph "User Interface"
+        Frontend["React Frontend<br/>(Dashboard)<br/>Port 5173"]
+        LandingSite["Landing Site<br/>(Next.js)<br/>Port 3000"]
+    end
+
+    subgraph "Backend Services"
+        Backend["Node.js Backend<br/>(Hono API)<br/>Port 4000"]
+        WordPress["WordPress CMS<br/>(MySQL)<br/>Port 80"]
+    end
+
+    subgraph "Privacy & Anonymity"
+        Onionize["Tor Onionize<br/>(Onion Service)"]
+        TorService["Tor Hidden Service<br/>(.onion address)"]
+    end
+
+    subgraph "Storage & Distribution"
+        IPFS["IPFS Kubo<br/>(Port 5001/8081)"]
+        IPFSCluster["IPFS Cluster<br/>(Port 9094/9096)"]
+        StaticSite["Static Site Mirror<br/>/static_site volume"]
+    end
+
+    subgraph "Discovery Network"
+        Waku["Waku Network<br/>(libp2p ReliableChannel)"]
+        Protobuf["Protobuf Messages<br/>(ManifestMessage)"]
+    end
+
+    subgraph "Cryptography"
+        Ed25519["Ed25519 Keypair<br/>(Signing)"]
+        Manifest["Signed Manifest<br/>(JSON + Signature)"]
+    end
+
+    %% User interactions
+    Frontend -->|API Calls| Backend
+    Frontend -->|Waku Connection| Waku
+    Frontend -->|IPFS Queries| IPFS
+    
+    %% Publishing flow
+    WordPress -->|Content Creation| Backend
+    Backend -->|Mirror via Tor| TorService
+    Onionize -->|Manages| TorService
+    Backend -->|wget + torsocks| StaticSite
+    StaticSite -->|Auto-sync every 60s| IPFS
+    IPFS -->|Replication| IPFSCluster
+    
+    %% Signing & Discovery
+    Backend -->|Generate/Load| Ed25519
+    Ed25519 -->|Sign| Manifest
+    Manifest -->|Publish| IPFS
+    Manifest -->|Encode| Protobuf
+    Protobuf -->|Announce| Waku
+    
+    %% Discovery
+    Waku -->|Listen| Frontend
+    Frontend -->|Display Publications| Frontend
+
+    style Frontend fill:#4A90E2
+    style Backend fill:#50C878
+    style IPFS fill:#69D2E7
+    style Waku fill:#F39C12
+    style Ed25519 fill:#E74C3C
+    style TorService fill:#9B59B6
 ```
-┌─────────────────────────────────────────┐
-│     React Dashboard (Port 5173)         │
-│  ┌──────────┬──────────┬─────────────┐  │
-│  │ Publish  │ Explore  │   Mirror    │  │
-│  └──────────┴──────────┴─────────────┘  │
-└────────────┬────────────────────────────┘
-             │
-┌────────────┴────────────────────────────┐
-│     Backend API (Hono - Port 4000)      │
-│  • Signing  • Mirroring  • Keypairs    │
-└──┬─────────┬──────────┬─────────────────┘
-   │         │          │
-┌──▼──┐  ┌──▼──────┐  ┌▼─────────┐
-│ Tor │  │  IPFS   │  │WordPress │
-│ .   │  │ + Cluster│  │ + MySQL  │
-│onion│  │         │  │  (80)    │
-└─────┘  └────┬────┘  └──────────┘
-              │
-         ┌────▼────┐
-         │  Waku   │
-         │Discovery│
-         └─────────┘
+
+### Publishing Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Dashboard as React Dashboard
+    participant Backend as Backend API
+    participant WordPress
+    participant Tor
+    participant IPFS
+    participant Waku as Waku Network
+    participant Peers as Discovery Peers
+
+    User->>Dashboard: 1. Access Dashboard
+    User->>WordPress: 2. Create Content
+    User->>Dashboard: 3. Click "Create Mirror"
+    
+    Dashboard->>Backend: POST /api/mirror/start
+    Backend->>Tor: Get .onion address
+    Backend->>Tor: wget via torsocks
+    Tor-->>Backend: Static site files
+    Backend->>IPFS: Auto-sync (60s interval)
+    IPFS-->>Backend: Site CID
+    
+    User->>Dashboard: 4. Generate Keypair
+    Dashboard->>Backend: POST /api/generate-keypair
+    Backend-->>Dashboard: Ed25519 Public Key
+    
+    User->>Dashboard: 5. Add Metadata<br/>(Title, Description, Tags)
+    User->>Dashboard: 6. Sign & Announce
+    
+    Dashboard->>IPFS: Get Site CID
+    IPFS-->>Dashboard: CID from MFS
+    
+    Dashboard->>Backend: POST /api/sign-manifest<br/>{site_cid}
+    Backend->>Backend: Create manifest JSON
+    Backend->>Backend: Sign with Ed25519
+    Backend->>IPFS: Publish signed manifest
+    IPFS-->>Backend: Manifest CID
+    Backend-->>Dashboard: {manifest_cid, signature}
+    
+    Dashboard->>Waku: Announce via ReliableChannel
+    Note over Dashboard,Waku: Protobuf encoded:<br/>timestamp, cids, pubkey,<br/>signature, metadata
+    Waku->>Peers: Broadcast announcement
+    
+    Peers->>IPFS: Fetch & verify content
+    Peers->>Peers: Pin content (mirroring)
 ```
 
 ### Services
@@ -96,31 +188,36 @@ That's it! Your FreePress node is now running.
 
 ## 📖 Usage
 
-### 1. Check System Status
+### 1. Access the Dashboard
 
-Visit http://localhost:3000 to see all services running:
-- ✅ Backend API
-- ✅ IPFS Node
-- ✅ Tor Service (initializing → healthy)
-- ✅ WordPress CMS
+Visit **http://localhost:5173** to access the FreePress Dashboard with tabs:
+- **Publish**: Mirror, sign, and announce your WordPress content
+- **Mirror**: View and manage WordPress site mirrors
+- **Settings**: Configure your node
 
 ### 2. Create Content
 
-Access WordPress at http://localhost:8080 to create posts.
+Access WordPress at **http://localhost:80** to create posts and pages.
 
-### 3. Publish Anonymously
+### 3. Create a Mirror
 
-(Coming in Day 2)
-- Export content to IPFS
-- Generate signed manifest
-- Announce to discovery network
+In the Dashboard's **Publish** tab:
+1. Click "Create New Mirror" to generate a static copy via Tor
+2. Wait for automatic IPFS sync (every 60 seconds)
+3. Click "Refresh CIDs" to check if your mirror is available
 
-### 4. Discover Others
+### 4. Sign & Announce
 
-(Coming in Day 4)
-- Browse manifests from other publishers
-- Access via .onion or IPFS CID
-- Mirror content you care about
+Still in the **Publish** tab:
+1. Click "Generate Keypair" to create your Ed25519 identity
+2. Add publication metadata (title, description, tags)
+3. Click "Sign & Announce" to publish your manifest to IPFS and broadcast to Waku
+
+### 5. Verify Your Publication
+
+- Your **Tor Onion URL** is displayed at the top
+- Your **Site CID** and **Manifest CID** appear after signing
+- Your content is now discoverable on the Waku network
 
 ## 🛠️ Development
 
@@ -128,27 +225,53 @@ Access WordPress at http://localhost:8080 to create posts.
 
 ```
 FreePress/
-├── backend/              # Express API
+├── backend/          # Node.js API (Hono)
 │   ├── src/
-│   │   ├── index.js      # Main server
-│   │   └── routes/       # API routes
-│   ├── Dockerfile
+│   │   ├── index.ts
+│   │   └── routes/
+│   │       ├── crypto.ts      # Ed25519 signing
+│   │       └── mirror.ts      # Tor mirroring
+│   ├── keys/                  # Ed25519 keypairs
 │   └── package.json
-│
-├── frontend/             # React Dashboard
+├── frontend/         # React dashboard (Vite)
 │   ├── src/
-│   │   ├── App.jsx       # Main component
-│   │   └── main.jsx      # Entry point
-│   ├── Dockerfile
+│   │   ├── components/
+│   │   │   ├── PublishTab.tsx
+│   │   │   ├── MirrorTab.tsx
+│   │   │   └── SettingsTab.tsx
+│   │   ├── hooks/
+│   │   │   └── useWakuDiscovery.tsx
+│   │   └── Dashboard.tsx
 │   └── package.json
-│
-├── publisher-agent/      # Export & IPFS service
-├── discovery-node/       # Indexer service
-├── tor/                  # Tor configuration
-│   └── torrc
-├── docker-compose.yml
-└── README.md
+├── site/             # Next.js landing page
+│   └── src/app/
+└── docker-compose.yml
 ```
+
+### Technology Stack
+
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Frontend** | React + TypeScript + Vite | Interactive dashboard UI |
+| **Backend** | Node.js + Hono Framework | REST API for signing & mirroring |
+| **CMS** | WordPress + MySQL | Content creation |
+| **Privacy** | Tor (onionize-docker) | Anonymous .onion services |
+| **Storage** | IPFS Kubo + Cluster | Decentralized content storage |
+| **Discovery** | Waku (libp2p ReliableChannel) | P2P announcement network |
+| **Crypto** | Ed25519 | Digital signatures for manifests |
+| **Serialization** | Protobuf.js | Efficient message encoding |
+| **Mirroring** | wget + torsocks | Static site generation via Tor |
+
+### Key Features Implemented
+
+✅ **WordPress Integration**: Local CMS with MySQL database  
+✅ **Tor Mirroring**: Automatic .onion service generation  
+✅ **IPFS Sync**: Auto-sync mirrors to IPFS every 60 seconds  
+✅ **Ed25519 Signing**: Cryptographic manifest signatures  
+✅ **Waku Discovery**: P2P content announcements  
+✅ **Manifest Publishing**: On-chain (IPFS) manifest storage  
+✅ **Publication Metadata**: Title, description, tags for discovery  
+✅ **CID Verification**: Real-time IPFS CID fetching from MFS  
 
 ### Available Commands
 
