@@ -4,6 +4,9 @@
 
 FreePress is a resilient anonymous publishing system that empowers journalists, activists, and communities to publish and discover content without centralized infrastructure, surveillance, or censorship.
 
+
+## Slide Deck - https://freepress--l1ctnxe.gamma.site/
+
 ## 🌍 Why FreePress?
 
 The ability to publish freely is under threat from:
