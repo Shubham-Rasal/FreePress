@@ -4,6 +4,15 @@
 
 FreePress is a resilient anonymous publishing system that empowers journalists, activists, and communities to publish and discover content without centralized infrastructure, surveillance, or censorship.
 
+## **Track:** 📰 Resilient Anonymous Publishing  
+
+**Description:**  
+FreePress directly addresses the *Resilient Anonymous Publishing* challenge by building a censorship-proof, privacy-preserving publishing stack that runs entirely on the user’s local machine. It replaces centralized platforms like WordPress.com with a self-contained system that integrates **Tor onion routing** for anonymous access, **IPFS** for decentralized storage, and **Waku/libp2p** for peer-to-peer discovery without metadata leakage.  
+
+Publishers can create and sign content locally, mirror it over Tor, and announce it to the Waku network—ensuring persistence even if the original node goes offline. Every publication is cryptographically signed with **Ed25519 keys**, enabling verifiable authenticity without revealing identity.  
+
+By combining familiar CMS workflows with decentralized protocols, FreePress achieves a balance between usability, resilience, and privacy—allowing journalists, activists, and communities to **publish without permission** while remaining resistant to takedowns, surveillance, and censorship.
+
 
 ## Slide Deck - https://freepress--l1ctnxe.gamma.site/
 
