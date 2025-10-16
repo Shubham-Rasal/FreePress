@@ -32,6 +32,12 @@ The ability to publish freely is under threat from:
 
 FreePress solves this by running **locally on your machine**, serving content over **Tor** and **IPFS**, with decentralized **Waku/libp2p** discovery.
 
+
+## 🧩 Architecture
+
+<img width="1814" height="619" alt="image" src="https://github.com/user-attachments/assets/d7a34e41-72db-4375-bcca-16c6504b8d18" />
+
+
 ## ✨ Features
 
 - 🖥️ **Local-first** - Runs on your computer, not someone else's cloud
@@ -71,9 +77,6 @@ Open your browser to:
 
 That's it! Your FreePress node is now running.
 
-## 🧩 Architecture
-
-<img width="1814" height="619" alt="image" src="https://github.com/user-attachments/assets/d7a34e41-72db-4375-bcca-16c6504b8d18" />
 
 
 ### System Overview
