@@ -347,26 +347,26 @@ docker compose down -v
 ### Week 1 - MVP (Current)
 
 - [x] Day 1: Docker compose + basic dashboard
-- [ ] Day 2: IPFS publishing + manifest signing
-- [ ] Day 3: Tor integration + onion display
-- [ ] Day 4: Waku/libp2p discovery
-- [ ] Day 5: UI polish + mirror functionality
-- [ ] Day 6: Resilience testing
-- [ ] Day 7: Packaging + demo
+- [x] Day 2: IPFS publishing + manifest signing
+- [x] Day 3: Tor integration + onion display
+- [x] Day 4: Waku/libp2p discovery
+- [x] Day 5: UI polish + mirror functionality
+- [x] Day 6: Resilience testing
+- [x] Day 7: Packaging + demo
 
 ### Phase 2 - Enhanced Discovery
 
-- [ ] Curator lists & trust system
-- [ ] Bloom-filter private search
+- [x] Curator lists & trust system
+- [x] Bloom-filter private search
 - [ ] Encrypted keyword search
 - [ ] Tag-based filtering
 
 ### Phase 3 - Long-term Persistence
 
-- [ ] Filecoin integration
+- [x] Filecoin integration
 - [ ] Arweave backup
 - [ ] web3.storage pinning
-- [ ] Automatic backup scheduling
+- [x] Automatic backup scheduling
 
 ### Phase 4 - Better UX
 
