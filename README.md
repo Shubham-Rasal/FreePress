@@ -69,11 +69,13 @@ cd FreePress
 docker compose up -d
 ```
 
-3. **Access the dashboard**
+3. **Access the services**
 Open your browser to:
-- **Dashboard**: http://localhost:5173
-- **Landing Site**: http://localhost:3000
+- **Frontend Dashboard**: http://localhost:5173 (React + Vite)
+- **Landing Site**: http://localhost:3000 (Next.js - run separately)
 - **WordPress**: http://localhost:80
+- **IPFS Gateway**: http://localhost:8081
+- **Backend API**: http://localhost:4000
 
 That's it! Your FreePress node is now running.
 
@@ -197,18 +199,18 @@ sequenceDiagram
 
 ### Services
 
-| Service | Port | Description |
-|---------|------|-------------|
-| **Dashboard** | 5173 | React frontend UI (Vite) |
-| **Landing Site** | 3000 | Next.js marketing site |
-| **Backend API** | 4000 | Node.js REST API (Hono) |
-| **WordPress** | 80 | CMS for content creation |
-| **IPFS Gateway** | 8081 | IPFS HTTP gateway |
-| **IPFS API** | 5001 | IPFS RPC API |
-| **IPFS Cluster** | 9094 | IPFS Cluster REST API |
-| **MySQL** | - | WordPress database (internal) |
-| **Tor** | - | Onion service (internal) |
-| **Waku** | - | P2P discovery (client-side) |
+| Service | Port | Description | Status |
+|---------|------|-------------|--------|
+| **Frontend** | 5173 | React dashboard (Vite) | 🐳 Docker |
+| **Backend API** | 4000 | Node.js REST API (Hono) | 🐳 Docker |
+| **WordPress** | 80 | CMS for content creation | 🐳 Docker |
+| **IPFS Gateway** | 8081 | IPFS HTTP gateway | 🐳 Docker |
+| **IPFS API** | 5001 | IPFS RPC API | 🐳 Docker |
+| **IPFS Cluster** | 9094 | IPFS Cluster REST API | 🐳 Docker |
+| **Landing Site** | 3000 | Next.js marketing site | 📦 Separate |
+| **MySQL** | - | WordPress database (internal) | 🐳 Docker |
+| **Tor** | - | Onion service (internal) | 🐳 Docker |
+| **Waku** | - | P2P discovery (client-side) | 🌐 Browser |
 
 ## 📖 Usage
 
