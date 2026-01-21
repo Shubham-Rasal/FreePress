@@ -42,5 +42,11 @@ logs/
 # Build artifacts
 dist/
 build/
+release/
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.zip
 
 
