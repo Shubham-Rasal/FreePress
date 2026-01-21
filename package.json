@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "description": "FreePress - Private, Censorship-Proof, Autonomous Publishing Desktop Application",
   "main": "electron/main.js",
-  "author": "Shubham Rasal",
+  "author": {
+    "name": "Shubham Rasal",
+    "email": "bluequbits@gmail.com"
+  },
   "license": "MIT",
   "private": true,
   "scripts": {
