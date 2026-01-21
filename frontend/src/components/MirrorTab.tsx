@@ -31,6 +31,7 @@ interface WordPressMirror {
   isPinned?: boolean;
 }
 
+// @ts-expect-error - MirrorJob interface may be used in future
 interface MirrorJob {
   id: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
@@ -40,17 +41,17 @@ interface MirrorJob {
 }
 
 function MirrorTab() {
-  const [mirrors, setMirrors] = useState<MirroredContent[]>([]);
+  const [mirrors] = useState<MirroredContent[]>([]);
   const [ipfsFiles, setIpfsFiles] = useState<IPFSFileLink[]>([]);
-  const [wpMirrors, setWpMirrors] = useState<WordPressMirror[]>([]);
-  const [currentJob, setCurrentJob] = useState<MirrorJob | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setWpMirrors] = useState<WordPressMirror[]>([]);
+  // const [currentJob, setCurrentJob] = useState<MirrorJob | null>(null);
+  // const [loading, setLoading] = useState(true);
   const [ipfsLoading, setIpfsLoading] = useState(true);
-  const [wpLoading, setWpLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, setWpLoading] = useState(true);
+  const [error] = useState<string | null>(null);
   const [ipfsError, setIpfsError] = useState<string | null>(null);
-  const [wpError, setWpError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [, setWpError] = useState<string | null>(null);
+  const [actionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     fetchIPFSFiles();

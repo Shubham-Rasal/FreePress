@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import PublishTab from './components/PublishTab';
 import MirrorTab from './components/MirrorTab';
 import SettingsTab from './components/SettingsTab';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export type ServiceStatus = {
   backend?: { status: string; version?: string };
@@ -20,9 +20,9 @@ export type SystemStatus = {
 
 function Dashboard() {
   const [activeTab, setActiveTab] = useState<'status' | 'publish' | 'explore' | 'mirror' | 'settings'>('status');
-  const [status, setStatus] = useState<SystemStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [loading] = useState(true);
+  const [error] = useState<string | null>(null);
 
 
 
