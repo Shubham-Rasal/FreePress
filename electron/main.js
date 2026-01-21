@@ -84,11 +84,6 @@ const createWindow = () => {
     // In production, load from built files
     mainWindow.loadFile(path.join(__dirname, '../frontend/dist/index.html'));
   }
-
-  // Open the DevTools in development
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
 };
 
 const startBackend = () => {

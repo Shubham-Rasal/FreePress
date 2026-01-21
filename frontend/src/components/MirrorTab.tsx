@@ -31,15 +31,6 @@ interface WordPressMirror {
   isPinned?: boolean;
 }
 
-// @ts-expect-error - MirrorJob interface may be used in future
-interface MirrorJob {
-  id: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  startedAt: number;
-  completedAt?: number;
-  error?: string;
-}
-
 function MirrorTab() {
   const [mirrors] = useState<MirroredContent[]>([]);
   const [ipfsFiles, setIpfsFiles] = useState<IPFSFileLink[]>([]);
