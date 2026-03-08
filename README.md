@@ -4,6 +4,9 @@
 
 FreePress is a resilient anonymous publishing system that empowers journalists, activists, and communities to publish and discover content without centralized infrastructure, surveillance, or censorship.
 
+<img width="1511" height="809" alt="image" src="https://github.com/user-attachments/assets/673e3b6b-d665-4c57-849d-4183e66f7fd5" />
+
+
 ## **Track:** 
 
 ### 📰 Resilient Anonymous Publishing  
