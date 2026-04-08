@@ -4,7 +4,7 @@ import { useWakuDiscovery } from '../hooks/useWakuDiscovery';
 
 function LandingPage() {
   // Use Waku for discovery (with simulation enabled for testing)
-  const { manifests, isLoading, error, nodeStatus, simulatePublish } = useWakuDiscovery(false);
+  const { manifests, isLoading, error, nodeStatus } = useWakuDiscovery(false);
   
   const [searchTag, setSearchTag] = useState('');
   const [sortBy, setSortBy] = useState<'timestamp' | 'mirrors'>('timestamp');

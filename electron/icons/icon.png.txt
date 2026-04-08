@@ -1,0 +1,5 @@
+This is a placeholder for the application icon.
+To add proper icons, replace this with actual icon files:
+- icon.png (512x512 or 1024x1024 for Linux)
+- icon.icns (for macOS)
+- icon.ico (for Windows)

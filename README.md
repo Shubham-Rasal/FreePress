@@ -52,14 +52,41 @@ FreePress solves this by running **locally on your machine**, serving content ov
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Desktop Application (Recommended for End Users)
+
+**Download and install the desktop application for the easiest experience:**
+
+#### macOS
+1. Download `FreePress-<version>.dmg` from [Releases](https://github.com/Shubham-Rasal/FreePress/releases)
+2. Open the DMG file
+3. Drag FreePress to Applications
+4. Launch FreePress from Applications
+
+#### Linux
+1. Download `FreePress-<version>.AppImage` from [Releases](https://github.com/Shubham-Rasal/FreePress/releases)
+2. Make it executable: `chmod +x FreePress-*.AppImage`
+3. Run: `./FreePress-*.AppImage`
+
+Or install via package manager:
+- **Debian/Ubuntu**: Download and install the `.deb` file
+- **Fedora/RHEL**: Download and install the `.rpm` file
+
+**Note**: The desktop app still requires Docker for IPFS, Tor, and WordPress services. Run `docker compose up -d` after installing.
+
+See [DESKTOP.md](DESKTOP.md) for detailed desktop installation instructions.
+
+### Docker Compose (For Developers)
+
+For development or if you prefer Docker:
+
+#### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) (v20.10+)
 - [Docker Compose](https://docs.docker.com/compose/install/) (v2.0+)
 - 4GB RAM minimum
 - 10GB free disk space
 
-### Installation
+#### Installation
 
 1. **Clone the repository**
 ```bash
@@ -375,10 +402,10 @@ docker compose down -v
 
 ### Phase 4 - Better UX
 
-- [ ] Electron desktop app
+- [x] Electron desktop app
 - [ ] Mobile reader app
 - [ ] Browser extension
-- [ ] One-click installer
+- [x] One-click installer (desktop DMG/AppImage/deb/rpm)
 
 ## 🤝 Contributing
 

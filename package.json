@@ -1,0 +1,76 @@
+{
+  "name": "freepress-desktop",
+  "version": "0.1.0",
+  "description": "FreePress - Private, Censorship-Proof, Autonomous Publishing Desktop Application",
+  "main": "electron/main.js",
+  "author": {
+    "name": "Shubham Rasal",
+    "email": "bluequbits@gmail.com"
+  },
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "install:all": "cd frontend && npm install && cd ../backend && npm install",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build:electron": "npm run build:frontend && npm run build:backend && electron-builder",
+    "start": "electron .",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\" \"electron .\"",
+    "package": "npm run build:frontend && npm run build:backend && electron-builder",
+    "package:mac": "npm run build:frontend && npm run build:backend && electron-builder --mac",
+    "package:linux": "npm run build:frontend && npm run build:backend && electron-builder --linux"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.freepress.app",
+    "productName": "FreePress",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/dist/**/*",
+      "backend/dist/**/*",
+      "backend/package.json",
+      "backend/node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.news",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "electron/icons/icon.icns"
+    },
+    "linux": {
+      "category": "Network",
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "icon": "electron/icons"
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}

@@ -22,7 +22,7 @@ export type SystemStatus = {
 
 function Dashboard() {
   const [activeTab, setActiveTab] = useState<'status' | 'publish' | 'mirror' | 'settings'>('publish');
-  const [status, setStatus] = useState<SystemStatus | null>(null);
+  const [_status, setStatus] = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
